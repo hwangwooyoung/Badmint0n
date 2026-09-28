@@ -31,6 +31,8 @@ button:focus-visible{outline:3px solid var(--shuttle);outline-offset:2px}
 ul{margin:0;padding-left:20px}li{margin:5px 0}
 .tag{display:inline-block;font-size:.8rem;padding:1px 9px;border-radius:6px;background:var(--shuttle);color:#2b2200;margin-right:6px;font-weight:600}
 .warn li::marker{color:var(--warn)}
+#q{width:100%;font:inherit;padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);margin-bottom:10px}
+details{border-top:1px solid var(--line);padding:8px 0}summary{cursor:pointer;font-weight:600;padding:4px 0}details .chips{margin-top:8px}
 .empty{color:var(--mute);text-align:center;padding:26px 8px}
 </style>
 </head>
@@ -44,6 +46,9 @@ ul{margin:0;padding-left:20px}li{margin:5px 0}
 
 <section><h2>상대 플레이 스타일 <small style="font-weight:400;color:var(--mute)">(중복 선택 가능)</small></h2>
 <div id="opps"></div></section>
+
+<section><h2>세부 키워드 <small style="font-weight:400;color:var(--mute)">(스타일 12개 + 세부 88개 = 100가지)</small></h2>
+<input id="q" type="search" placeholder="키워드 검색 (예: 백핸드, 체력, 스매시)" aria-label="키워드 검색"><div id="kw"></div></section>
 
 <section><h2>경기장 조건 <small style="font-weight:400;color:var(--mute)">(해당되는 것 모두)</small></h2>
 <div class="chips" id="venue"></div></section>
@@ -116,15 +121,29 @@ wd:{n:'목재 바닥',t:'마찰이 적당해 스텝이 안정적입니다. 급�
 rub:{n:'고무·PVC 매트',t:'마찰이 커서 발목·무릎 부담이 큽니다. 큰 방향 전환보다 작은 스텝으로 이동하세요.'},
 std:{n:'표준 대회장',t:'환경 변수가 적으니 순수 스타일 대응에 집중하세요. 워밍업에서 셔틀 속도만 확인하세요.'}
 };
-const st={m:'s',a:new Set(),b:new Set(),v:new Set()};
+const P=s=>s.split(';').map(x=>x.split(':'));
+const SH=P('스매시:낮은 드라이브·블록으로 각도 차단:일부러 띄워 스매시 실수 유도;드롭:깊은 클리어로 앞 이동 차단:앞 공이 약하니 드롭·헤어핀 집중;클리어:짧은 공으로 뒤 이동 늘리기:클리어가 짧으니 넘어온 공을 스매시로;드리븐:높은 공으로 속도 감소:낮은 속공으로 시간 뺏기;헤어핀:깊게 보내 앞 승부 회피:네트 앞 승부 유도해 실수 얻기;푸시:앞 짧은 공 금지·깊게 보내기:낮게 이어가며 마무리 약점 노리기;드라이브:높이 변화로 드라이브 흐름 끊기:드라이브 유도해 랠리 주도;플릭:전위 자세 낮추고 뒤 커버:플릭 없으니 전위 앞 압박;블록:속도 낮춰 다음 공 예측:스매시 연속으로 압박;서브:리턴 위치를 앞으로:리턴 공격 적극적으로;리시브:리턴 코스 미리 정해 선공:서브 후 3구 공격;네트킬:전위에 높은 공 금지:앞쪽 공을 유도해 킬 실수 얻기');
+const KW={'샷 강점':SH.map(x=>[x[0]+' 강함',x[1]]),'샷 약점':SH.map(x=>[x[0]+' 약함',x[2]]),
+'코트 구역 약점':P('앞 왼쪽:크로스 헤어핀 반복;앞 오른쪽:짧은 공 집중;뒤 왼쪽(백핸드):백코너 클리어·스매시;뒤 오른쪽:깊은 클리어 반복;몸 오른쪽:낮은 드라이브;몸 왼쪽:배 높이 공 보내기;중앙:중앙 몸 쪽 집중;앞 중앙:센터 앞 짧은 공;뒤 중앙:센터 후방 높은 공;사이드라인:라인 근처 공 배분'),
+'이동·체력':P('첫 스텝 빠름:페이크와 템포 변화;첫 스텝 느림:빠른 공으로 시간 뺏기;앞 이동 느림:드롭·헤어핀 반복;뒤 이동 느림:깊은 클리어 반복;좌우 이동 약함:대각으로 좌우 흔들기;방향 전환 약함:한쪽 유도 후 반대로 급전환;점프 스매시 능함:높은 공 피하고 낮게 유지;후반 체력 저하:랠리 늘려 후반 소모 유도;회복 빠름:패턴을 쌓아 서서히 무너뜨리기;스플릿 스텝 없음:템포 변화로 반응 늦추기;리커버리 느림:친 뒤 빈 곳으로 빠르게;스텝 큼:몸 쪽 짧은 공으로 스텝 꼬이게;호흡 빨라짐:긴 랠리로 밀어붙이기;이동 범위 제한:좌우 넓게 배분'),
+'멘탈·운영':P('급함:서브 템포를 늦추기;냉정:패턴을 바꿔 예측 깨기;리드 시 소극적:리드 후에도 압박 유지;뒤질 때 무너짐:초반 점수 차 벌리기;실수 후 흔들림:직후 안정적인 공;듀스 강함:듀스 전에 끝내기;초반 약함:초반 빠르게 점수 벌리기;후반 강함:1세트에 승부 보기;패턴 반복:패턴 파악해 미리 위치;점수차 방심:앞서도 집중 유지;서브 리듬 일정:리듬 읽고 리턴 타이밍;판정 예민:논란 없는 확실한 인 공;분위기 좌우:연속 득점으로 흐름 선점;과감함:안전한 낮은 공으로 역이용'),
+'복식 전용':P('로테이션 느림:방향 전환으로 공백 노리기;전위 강함:전위 머리 위 플릭과 후위 깊이;후위만 공격:후위 유도 대신 전위에 짧은 공;사이드바이사이드 고집:중앙과 앞뒤 공간;톱앤백 고집:전위 옆 사이드로 드라이브;소통 부족:두 사람 사이 중앙;실력 차 큼:약한 쪽 집중·강한 쪽 우회;중앙 미룸:몸 쪽 중앙 반복;드라이브 랠리 강:높이 변화로 흐름 끊기;리턴 약함:서브 후 3구 공격;헤어핀 강함:플릭으로 앞 압박 회피;역할 분담 명확:공격수 우회·수비수 공략;서브 후 압박 강함:낮고 빠른 T라인 리턴;한 명 실수 잦음:그 선수에게 지속 공략'),
+'선수 특성':P('키 큼:낮은 공과 사이드로;키 작음:높고 깊은 클리어;손목 강함:플릭 대비 뒤 커버;손목 약함:빠른 드라이브 교환;초보:단순 패턴으로 넓게 배분;중급 동호인:기본 샷 정확도 우선;엘리트:실수 최소화·초반 탐색;시니어:랠리 늘려 체력 관리 유도;청소년:변화구·템포로 대응;라켓 무거움:빠른 손목 교환;그립 두꺼움:앞 공 유도;그립 얇음:손목 페이크 주의')};
+const TIP={};for(const c in KW)KW[c].forEach(x=>TIP[x[0]]=x[1]);
+const st={m:'s',a:new Set(),b:new Set(),v:new Set(),k:new Set()};
 const $=s=>document.querySelector(s);
 function chips(el,obj,set,cb){el.innerHTML='';for(const k in obj){const b=document.createElement('button');b.className='chip';b.textContent=obj[k].n;b.setAttribute('aria-pressed',set.has(k));b.onclick=()=>{set.has(k)?set.delete(k):set.add(k);b.setAttribute('aria-pressed',set.has(k));cb()};el.appendChild(b)}}
 function buildOpps(){const o=$('#opps');o.innerHTML='';const list=st.m==='s'?[['상대 선수','a']]:[['상대 A (전위 또는 왼쪽)','a'],['상대 B (후위 또는 오른쪽)','b']];
  list.forEach(([lab,key])=>{const w=document.createElement('div');w.className='who';w.innerHTML='<b>'+lab+'</b><div class="chips"></div>';o.appendChild(w);chips(w.lastChild,STY,st[key],render)})}
-function render(){const out=$('#out'),m=st.m;const ka=[...st.a],kb=m==='d'?[...st.b]:[];
- if(!ka.length&&!kb.length){out.innerHTML='<div class="empty">상대 스타일을 하나 이상 선택하면 공략법이 나타납니다.</div>';return}
- const all=[...new Set([...ka,...kb])];const lead=STY[all[0]];
- let h='<section class="hero"><small>핵심 전략</small><p>'+lead.h[m]+'</p></section>';
+function buildKw(){const q=($('#q').value||'').trim(),box=$('#kw');box.innerHTML='';
+ for(const c in KW){if(c==='복식 전용'&&st.m==='s')continue;const it=KW[c].filter(x=>!q||x[0].includes(q)||c.includes(q));if(!it.length)continue;
+  const d=document.createElement('details');d.open=!!q;d.innerHTML='<summary>'+c+' ('+it.length+')</summary><div class="chips"></div>';box.appendChild(d);
+  chips(d.lastChild,Object.fromEntries(it.map(x=>[x[0],{n:x[0]}])),st.k,render)}}
+function render(){const out=$('#out'),m=st.m;const ka=[...st.a],kb=m==='d'?[...st.b]:[];const kk=[...st.k].filter(x=>m==='d'||!KW['복식 전용'].some(y=>y[0]===x));
+ if(!ka.length&&!kb.length&&!kk.length){out.innerHTML='<div class="empty">스타일이나 세부 키워드를 하나 이상 선택하면 공략법이 나타납니다.</div>';return}
+ const all=[...new Set([...ka,...kb])];const lead=all.length?STY[all[0]].h[m]:'선택한 세부 특징을 중심으로 상대의 약점부터 공략하세요.';
+ let h='<section class="hero"><small>핵심 전략</small><p>'+lead+'</p></section>';
+ if(kk.length)h+='<section><h2>세부 특징 공략</h2><ul>'+kk.map(x=>'<li><b>'+x+':</b> '+TIP[x]+'</li>').join('')+'</ul></section>';
  const grp=(lab,keys)=>keys.length?'<section><h2>'+lab+'</h2>'+keys.map(k=>'<div class="who"><span class="tag">'+STY[k].n+'</span><ul>'+STY[k][m].map(t=>'<li>'+t+'</li>').join('')+'</ul></div>').join('')+'</section>':'';
  if(m==='s')h+=grp('상대 공략법',ka);else{h+=grp('상대 A 공략',ka);h+=grp('상대 B 공략',kb);
   if(ka.length&&kb.length){const both=ka.filter(x=>kb.includes(x));const c=[];
@@ -133,12 +152,12 @@ function render(){const out=$('#out'),m=st.m;const ka=[...st.a],kb=m==='d'?[...s
    if(ka.some(x=>x==='net')||kb.some(x=>x==='net'))c.push('전위 강한 상대가 있으면 후위 쪽에 지속적으로 공을 보내세요.');
    if(!c.length)c.push('약한 쪽 한 명을 집중 공략해 다른 한 명과의 호흡을 깨세요. 서로 미루는 중앙을 노리세요.');
    h+='<section><h2>조합 전략</h2><ul>'+c.map(t=>'<li>'+t+'</li>').join('')+'</ul></section>'}}
- h+='<section><h2>서브·리시브</h2><ul>'+all.map(k=>'<li>'+STY[k].sv[m]+'</li>').join('')+'</ul></section>';
+ if(all.length)h+='<section><h2>서브·리시브</h2><ul>'+all.map(k=>'<li>'+STY[k].sv[m]+'</li>').join('')+'</ul></section>';
  const vs=[...st.v];
  if(vs.length)h+='<section class="warn"><h2>경기장 대응</h2><ul>'+vs.map(k=>'<li><b>'+VEN[k].n+':</b> '+VEN[k].t+'</li>').join('')+'</ul></section>';
  out.innerHTML=h}
-document.querySelectorAll('#mode button').forEach(b=>b.onclick=()=>{st.m=b.dataset.m;document.querySelectorAll('#mode button').forEach(x=>x.setAttribute('aria-pressed',x===b));buildOpps();render()});
-chips($('#venue'),VEN,st.v,render);buildOpps();render();
+document.querySelectorAll('#mode button').forEach(b=>b.onclick=()=>{st.m=b.dataset.m;document.querySelectorAll('#mode button').forEach(x=>x.setAttribute('aria-pressed',x===b));buildOpps();buildKw();render()});
+chips($('#venue'),VEN,st.v,render);buildOpps();buildKw();$('#q').oninput=buildKw;render();
 </script>
 </body>
 </html>
