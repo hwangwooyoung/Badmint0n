@@ -33,6 +33,9 @@ ul{margin:0;padding-left:20px}li{margin:5px 0}
 .warn li::marker{color:var(--warn)}
 #q{width:100%;font:inherit;padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);margin-bottom:10px}
 details{border-top:1px solid var(--line);padding:8px 0}summary{cursor:pointer;font-weight:600;padding:4px 0}details .chips{margin-top:8px}
+.bar{position:relative;display:flex;align-items:center;gap:8px;margin:6px 0;font-size:.92rem}
+.bar span{flex:0 0 150px}.bar i{display:block;height:10px;border-radius:5px;background:var(--court);max-width:60%}.bar b{margin-left:auto;font-variant-numeric:tabular-nums}
+.note{color:var(--mute);font-size:.85rem;margin:10px 0 0}
 .empty{color:var(--mute);text-align:center;padding:26px 8px}
 </style>
 </head>
@@ -50,8 +53,15 @@ details{border-top:1px solid var(--line);padding:8px 0}summary{cursor:pointer;fo
 <section><h2>세부 키워드 <small style="font-weight:400;color:var(--mute)">(스타일 12개 + 세부 88개 = 100가지)</small></h2>
 <input id="q" type="search" placeholder="키워드 검색 (예: 백핸드, 체력, 스매시)" aria-label="키워드 검색"><div id="kw"></div></section>
 
+<section><h2>내 강점 전술 <small style="font-weight:400;color:var(--mute)">(자신 있는 것)</small></h2><div class="chips" id="mine"></div>
+<h2 style="margin-top:14px">경기 상황</h2><div class="chips" id="sit"></div></section>
+
 <section><h2>경기장 조건 <small style="font-weight:400;color:var(--mute)">(해당되는 것 모두)</small></h2>
 <div class="chips" id="venue"></div></section>
+
+<section><h2>경기 기록으로 학습시키기</h2>
+<p class="note" style="margin:0 0 10px">위에서 상대 스타일을 고른 뒤, 실제로 쓴 전술이 통했는지 기록하세요. 같은 유형의 추천 확률이 내 기록에 맞게 조정됩니다. 기록은 이 브라우저에만 저장됩니다.</p>
+<div class="chips"><select id="rt" aria-label="사용한 전술" style="font:inherit;padding:7px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)"></select><button class="chip" id="ok">통했다</button><button class="chip" id="ng">안 통했다</button><button class="chip" id="rst">기록 초기화</button></div></section>
 
 <div id="out"></div>
 </main>
@@ -130,7 +140,28 @@ const KW={'샷 강점':SH.map(x=>[x[0]+' 강함',x[1]]),'샷 약점':SH.map(x=>[
 '복식 전용':P('로테이션 느림:방향 전환으로 공백 노리기;전위 강함:전위 머리 위 플릭과 후위 깊이;후위만 공격:후위 유도 대신 전위에 짧은 공;사이드바이사이드 고집:중앙과 앞뒤 공간;톱앤백 고집:전위 옆 사이드로 드라이브;소통 부족:두 사람 사이 중앙;실력 차 큼:약한 쪽 집중·강한 쪽 우회;중앙 미룸:몸 쪽 중앙 반복;드라이브 랠리 강:높이 변화로 흐름 끊기;리턴 약함:서브 후 3구 공격;헤어핀 강함:플릭으로 앞 압박 회피;역할 분담 명확:공격수 우회·수비수 공략;서브 후 압박 강함:낮고 빠른 T라인 리턴;한 명 실수 잦음:그 선수에게 지속 공략'),
 '선수 특성':P('키 큼:낮은 공과 사이드로;키 작음:높고 깊은 클리어;손목 강함:플릭 대비 뒤 커버;손목 약함:빠른 드라이브 교환;초보:단순 패턴으로 넓게 배분;중급 동호인:기본 샷 정확도 우선;엘리트:실수 최소화·초반 탐색;시니어:랠리 늘려 체력 관리 유도;청소년:변화구·템포로 대응;라켓 무거움:빠른 손목 교환;그립 두꺼움:앞 공 유도;그립 얇음:손목 페이크 주의')};
 const TIP={};for(const c in KW)KW[c].forEach(x=>TIP[x[0]]=x[1]);
-const st={m:'s',a:new Set(),b:new Set(),v:new Set(),k:new Set()};
+const T=[['clr','깊은 클리어',/클리어|깊은|후방|뒤로/],['drp','드롭·헤어핀 (앞 공략)',/드롭|헤어핀|앞|짧은|네트/],['smh','스매시·결정타',/스매시|공격|마무리|결정/],['drv','드라이브·블록',/드라이브|블록|낮은 공|낮게/],['flk','플릭·전위 견제',/플릭|전위/],['bdy','몸 쪽·중앙 공략',/몸|중앙|사이/],['crs','대각·좌우 흔들기',/대각|좌우|크로스|방향 전환/],['tmp','템포·페이크 변화',/템포|페이크|리듬|패턴/],['ral','랠리 길게 끌기',/랠리|체력|소모/],['fst','빠른 3구 공격',/3구|속공|빠르|초반|서브/]];
+const VADJ={hi:{clr:-2,drp:1},ac:{clr:-1,smh:-1,drp:1},out:{smh:-1,drp:1,drv:1},slw:{smh:1,clr:1},fast:{clr:-1,drp:1},slp:{crs:1},lgt:{clr:-1},sun:{clr:-1}};
+const SIT={lead:{n:'점수 앞서는 중',a:{ral:1,tmp:1}},close:{n:'접전·듀스',a:{tmp:1,drv:1}},behind:{n:'점수 뒤지는 중',a:{fst:2,smh:1}}};
+let REC={};try{REC=JSON.parse(localStorage.getItem('rec')||'{}')}catch(e){}
+const saveRec=()=>{try{localStorage.setItem('rec',JSON.stringify(REC))}catch(e){}};
+const ctx=()=>st.m+'|'+[...st.a,...(st.m==='d'?st.b:[])].sort().join(',');
+const recN=()=>Object.values(REC[ctx()]||{}).reduce((a,r)=>a+r[1],0);
+function record(ok){const c=ctx(),k=$('#rt').value;REC[c]=REC[c]||{};const r=REC[c][k]||[0,0];r[1]++;if(ok)r[0]++;REC[c][k]=r;saveRec();render()}
+function calc(m,ka,kb,kk,vs){const sc={};T.forEach(t=>sc[t[0]]=0);
+ const NEG=/피하|금지|말고|않|대신|줄이|회피|우회|보다/;
+ const add=(x,w)=>{const tk=x.split(/[\s·,.;]+/);tk.forEach((s,i)=>{const ng=[0,1,2].some(j=>tk[i+j]&&NEG.test(tk[i+j]));T.forEach(t=>{if(t[2].test(s))sc[t[0]]+=(ng?-.7:1)*w})})};
+ [...ka,...kb].forEach(k=>{const s=STY[k];add(s.h[m]+' '+s[m].join(' ')+' '+s.sv[m],1)});
+ kk.forEach(x=>add(TIP[x],1.5));
+ vs.forEach(k=>{add(VEN[k].t,1);const a=VADJ[k];if(a)for(const z in a)sc[z]+=a[z]});
+ const R=REC[ctx()]||{};T.forEach(t=>{const r=R[t[0]];if(r)sc[t[0]]+=((r[0]+1)/(r[1]+2)-.5)*8*Math.min(1,r[1]/5)});
+ st.mine.forEach(k=>sc[k]+=1.5);if(st.sit)for(const z in SIT[st.sit].a)sc[z]+=SIT[st.sit].a[z];
+ const mx=Math.max(...Object.values(sc)),e=T.map(t=>Math.exp((sc[t[0]]-mx)*.45)),sum=e.reduce((a,b)=>a+b,0);
+ return T.map((t,i)=>[t[1],e[i]/sum*100]).sort((a,b)=>b[1]-a[1])}
+function probHtml(m,ka,kb,kk,vs){const rc=recN(),r=calc(m,ka,kb,kk,vs),n=ka.length+kb.length+kk.length+vs.length+st.mine.size+(st.sit?1:0)+Math.min(rc,10),lv=n<3?'낮음':n<7?'보통':'높음';
+ return '<section><h2>전술 추천 확률</h2>'+r.map(x=>'<div class="bar"><span>'+x[0]+'</span><i style="width:'+Math.max(2,x[1]*2.2)+'%"></i><b>'+x[1].toFixed(1)+'%</b></div>').join('')+'<p class="note">입력 정보 '+n+'개 · 이 상대 유형 기록 '+rc+'경기 반영 · 추정 신뢰도 '+lv+'. 기본값은 규칙 기반 추정이며, 기록이 쌓일수록 내 경기 데이터에 맞게 조정됩니다.</p></section>'}
+function buildSit(){const el=$('#sit');el.innerHTML='';for(const k in SIT){const b=document.createElement('button');b.className='chip';b.textContent=SIT[k].n;b.setAttribute('aria-pressed',st.sit===k);b.onclick=()=>{st.sit=st.sit===k?'':k;buildSit();render()};el.appendChild(b)}}
+const st={m:'s',a:new Set(),b:new Set(),v:new Set(),k:new Set(),mine:new Set(),sit:''};
 const $=s=>document.querySelector(s);
 function chips(el,obj,set,cb){el.innerHTML='';for(const k in obj){const b=document.createElement('button');b.className='chip';b.textContent=obj[k].n;b.setAttribute('aria-pressed',set.has(k));b.onclick=()=>{set.has(k)?set.delete(k):set.add(k);b.setAttribute('aria-pressed',set.has(k));cb()};el.appendChild(b)}}
 function buildOpps(){const o=$('#opps');o.innerHTML='';const list=st.m==='s'?[['상대 선수','a']]:[['상대 A (전위 또는 왼쪽)','a'],['상대 B (후위 또는 오른쪽)','b']];
@@ -143,6 +174,7 @@ function render(){const out=$('#out'),m=st.m;const ka=[...st.a],kb=m==='d'?[...s
  if(!ka.length&&!kb.length&&!kk.length){out.innerHTML='<div class="empty">스타일이나 세부 키워드를 하나 이상 선택하면 공략법이 나타납니다.</div>';return}
  const all=[...new Set([...ka,...kb])];const lead=all.length?STY[all[0]].h[m]:'선택한 세부 특징을 중심으로 상대의 약점부터 공략하세요.';
  let h='<section class="hero"><small>핵심 전략</small><p>'+lead+'</p></section>';
+ h+=probHtml(m,ka,kb,kk,[...st.v]);
  if(kk.length)h+='<section><h2>세부 특징 공략</h2><ul>'+kk.map(x=>'<li><b>'+x+':</b> '+TIP[x]+'</li>').join('')+'</ul></section>';
  const grp=(lab,keys)=>keys.length?'<section><h2>'+lab+'</h2>'+keys.map(k=>'<div class="who"><span class="tag">'+STY[k].n+'</span><ul>'+STY[k][m].map(t=>'<li>'+t+'</li>').join('')+'</ul></div>').join('')+'</section>':'';
  if(m==='s')h+=grp('상대 공략법',ka);else{h+=grp('상대 A 공략',ka);h+=grp('상대 B 공략',kb);
@@ -157,7 +189,7 @@ function render(){const out=$('#out'),m=st.m;const ka=[...st.a],kb=m==='d'?[...s
  if(vs.length)h+='<section class="warn"><h2>경기장 대응</h2><ul>'+vs.map(k=>'<li><b>'+VEN[k].n+':</b> '+VEN[k].t+'</li>').join('')+'</ul></section>';
  out.innerHTML=h}
 document.querySelectorAll('#mode button').forEach(b=>b.onclick=()=>{st.m=b.dataset.m;document.querySelectorAll('#mode button').forEach(x=>x.setAttribute('aria-pressed',x===b));buildOpps();buildKw();render()});
-chips($('#venue'),VEN,st.v,render);buildOpps();buildKw();$('#q').oninput=buildKw;render();
+chips($('#venue'),VEN,st.v,render);chips($('#mine'),Object.fromEntries(T.map(t=>[t[0],{n:t[1]}])),st.mine,render);buildSit();$('#rt').innerHTML=T.map(t=>'<option value="'+t[0]+'">'+t[1]+'</option>').join('');$('#ok').onclick=()=>record(1);$('#ng').onclick=()=>record(0);$('#rst').onclick=()=>{REC={};saveRec();render()};buildOpps();buildKw();$('#q').oninput=buildKw;render();
 </script>
 </body>
 </html>
