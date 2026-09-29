@@ -70,7 +70,11 @@ details{border-top:1px solid var(--line);padding:8px 0}summary{cursor:pointer;fo
 
 <section><h2>상대 프로필 저장 <small style="font-weight:400;color:var(--mute)">(부가 기능 · 다음에 같은 상대 만날 때 재사용)</small></h2>
 <div class="chips"><input id="pn" placeholder="상대 이름 (예: 김철수)" style="font:inherit;padding:7px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)"><button class="chip" id="psave">현재 선택 저장</button></div>
-<div class="chips" id="plist" style="margin-top:10px"></div></section>
+<div class="chips" id="plist" style="margin-top:10px"></div>
+<h2 style="margin-top:14px">상대 vs 상대 비교</h2>
+<div class="chips"><select id="cp1" style="font:inherit;padding:7px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)"></select><select id="cp2" style="font:inherit;padding:7px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)"></select><button class="chip" id="cpbtn">비교하기</button></div>
+<div id="cpout" style="margin-top:8px"></div>
+</section>
 
 <section><h2>경기 기록으로 학습시키기</h2>
 <p class="note" style="margin:0 0 10px">위에서 상대 스타일을 고른 뒤, 실제로 쓴 전술이 통했는지 기록하세요. 같은 유형의 추천 확률이 내 기록에 맞게 조정됩니다. 기록은 이 브라우저에만 저장됩니다.</p>
@@ -213,8 +217,25 @@ function buildPlist(){const P=loadProfiles(),el=$('#plist');el.innerHTML=Object.
   const lb=document.createElement('button');lb.className='chip';lb.textContent='📂 '+n;lb.onclick=()=>{const s=P[n];st.m=s.m;st.a=new Set(s.a);st.b=new Set(s.b);st.v=new Set(s.v);st.k=new Set(s.k);st.k2=new Set(s.k2);st.mine=new Set(s.mine);
    document.querySelectorAll('#mode button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.m===st.m));$('#kt').style.display=st.m==='d'?'inline-flex':'none';
    buildOpps();chips($('#venue'),VEN,st.v,render);chips($('#mine'),Object.fromEntries(T.map(t=>[t[0],{n:t[1]}])),st.mine,render);buildKw();render()};
-  const db=document.createElement('button');db.className='chip';db.textContent='삭제';db.onclick=()=>{const P2=loadProfiles();delete P2[n];localStorage.setItem('profiles',JSON.stringify(P2));buildPlist()};
+  const db=document.createElement('button');db.className='chip';db.textContent='삭제';db.onclick=()=>{const P2=loadProfiles();delete P2[n];localStorage.setItem('profiles',JSON.stringify(P2));buildPlist();buildCompare()};
   w.appendChild(lb);w.appendChild(db);el.appendChild(w)})}
+const DRILL={atk:'멀티셔틀 스매시 리시브 20개 연속 받기',def:'3구 안에 끝내는 공격 패턴 반복 연습(스매시→네트킬)',net:'헤어핀↔드라이브 전환 풋워크 훈련',all:'초반 3랠리 탐색 시뮬레이션(약점 코스 빠르게 찾기)',sta:'5구 이내 결정타 훈련, 짧은 랠리 스퍼트',lef:'반대 방향 크로스 스매시 각도 적응 훈련',bh:'백핸드 코너 연속 클리어 100개',spd:'깊은 하이클리어로 템포 늦추는 훈련',tr:'스플릿 스텝 타이밍 훈련(셔틀 임팩트까지 안 움직이기)',drp:'전위 전진 스텝과 푸시 마무리 훈련',pow:'네트 앞 짧은 공 연속 처리 훈련',slow:'코트 4모서리 왕복 풋워크 훈련'};
+const DRCAT={'샷 강점':'그 샷이 나올 코스를 막는 서브·리시브 위치 훈련','샷 약점':'그 샷 코스로 유도하는 3구 패턴 훈련','코트 구역 약점':'해당 구역 집중 타점 연습 50개','이동·체력':'인터벌 스텝 훈련(20초 전력·10초 휴식×10)','멘탈·운영':'점수 상황별(리드/듀스) 루틴 시뮬레이션','복식 전용':'로테이션·콜 사인 파트너 훈련','선수 특성':'초반 탐색 랠리로 특성 확인하는 연습 경기','장비·컨디션':'워밍업 루틴 표준화 연습','스탠스·자세':'상대 자세 관찰 후 코스 예측 훈련'};
+function drillHtml(ka,kb,kk){const set=new Set();[...ka,...kb].forEach(k=>DRILL[k]&&set.add(DRILL[k]));kk.forEach(x=>CAT[x]&&DRCAT[CAT[x]]&&set.add(DRCAT[CAT[x]]));
+ if(!set.size)return'';const l=[...set].slice(0,5);
+ return'<section><h2>이번 주 추천 연습</h2><ul>'+l.map(t=>'<li>'+t+'</li>').join('')+'</ul><p class="note">선택한 상대 특징을 바탕으로 한 일반적 드릴 제안입니다.</p></section>'}
+function compareProfiles(){const n1=$('#cp1').value,n2=$('#cp2').value,P=loadProfiles(),out=$('#cpout');if(!n1||!n2||n1===n2){out.innerHTML='<p class="note">서로 다른 프로필 두 개를 고르세요.</p>';return}
+ const p1=P[n1],p2=P[n2],tr=p=>({s:new Set([...p.a,...p.b]),k:new Set([...p.k,...p.k2])}),t1=tr(p1),t2=tr(p2);
+ const cs=[...t1.s].filter(x=>t2.s.has(x)),u1=[...t1.s].filter(x=>!t2.s.has(x)),u2=[...t2.s].filter(x=>!t1.s.has(x));
+ const ck=[...t1.k].filter(x=>t2.k.has(x)),uk1=[...t1.k].filter(x=>!t2.k.has(x)),uk2=[...t2.k].filter(x=>!t1.k.has(x));
+ const nm=a=>a.length?a.map(x=>STY[x]?STY[x].n:x).join(', '):'없음';
+ out.innerHTML='<h3 style="font-size:.95rem;margin:10px 0 4px">공통 특징(우선 공략)</h3><p>'+nm(cs)+(ck.length?', '+ck.join(', '):'')+'</p>'+
+  '<h3 style="font-size:.95rem;margin:10px 0 4px">'+n1+'만의 특징</h3><p>'+nm(u1)+(uk1.length?', '+uk1.join(', '):'')+'</p>'+
+  '<h3 style="font-size:.95rem;margin:10px 0 4px">'+n2+'만의 특징</h3><p>'+nm(u2)+(uk2.length?', '+uk2.join(', '):'')+'</p>'+
+  '<p class="note">'+(cs.length||ck.length?'공통 특징이 있으니 그 공략법을 팀 전체 기본 전술로 삼으세요.':'공통 특징이 적으니 상대별로 전술을 따로 준비하세요.')+'</p>'}
+function buildCompare(){const P=loadProfiles(),ks=Object.keys(P),o=k=>'<option value="'+k+'">'+k+'</option>';
+ ['#cp1','#cp2'].forEach(id=>$(id).innerHTML='<option value="">선택</option>'+ks.map(o).join(''));
+ $('#cpout').innerHTML=ks.length<2?'<p class="note">프로필을 2개 이상 저장하면 비교할 수 있습니다.</p>':''}
 function copySummary(){const{m,ka,kb,kk,vs,r}=window.__last||{};if(!r)return;const L=x=>x.length?x.join(', '):'없음';
  let t='[배드민턴 공략 요약]\n형식: '+(m==='s'?'단식':'복식')+'\n상대 스타일: '+L(ka.map(k=>STY[k].n))+(m==='d'?' / '+L(kb.map(k=>STY[k].n)):'')+'\n세부 키워드: '+L(kk)+'\n경기장: '+L(vs.map(k=>VEN[k].n))+'\n추천 전술 1위: '+r[0][0]+' ('+r[0][1].toFixed(1)+'%), 2위: '+r[1][0]+' ('+r[1][1].toFixed(1)+'%)\n';
  navigator.clipboard?.writeText(t).catch(()=>{});const io=$('#io');if(io){io.value=t;io.select()}}
@@ -233,6 +254,7 @@ function render(){const out=$('#out'),m=st.m;$('#cases').textContent=casesTxt();
  const all=[...new Set([...ka,...kb])];const lead=all.length?STY[all[0]].h[m]:'선택한 세부 특징을 중심으로 상대의 약점부터 공략하세요.';
  let h='<section class="hero"><small>핵심 전략</small><p>'+lead+'</p></section>';
  h+=probHtml(m,ka,kb,kk,[...st.v]);
+ h+=drillHtml(ka,kb,kk);
  const gt=Object.entries(st.g).filter(([g])=>m==='d'||g!=='내 대형(복식)').map(([g,o])=>'<li><b>'+g+' '+o+':</b> '+G[g][o][1]+'</li>');
  if(gt.length)h+='<section><h2>상황별 조언</h2><ul>'+gt.join('')+'</ul></section>';
  const kl=(a,lab)=>a.length?'<section><h2>'+lab+'</h2><ul>'+a.map(x=>'<li><b>'+x+':</b> '+TIP[x]+'<br><small style="color:var(--mute)">'+DET[CAT[x]][m==='d'?1:0]+'</small></li>').join('')+'</ul></section>':'';
@@ -255,7 +277,8 @@ chips($('#venue'),VEN,st.v,render);chips($('#mine'),Object.fromEntries(T.map(t=>
 $('#ms').oninput=syncScore;$('#os').oninput=syncScore;
 buildChk();
 buildPlist();
-$('#psave').onclick=()=>{const n=($('#pn').value||'').trim();if(!n)return;const P=loadProfiles();P[n]=snap();localStorage.setItem('profiles',JSON.stringify(P));$('#pn').value='';buildPlist()};
+$('#psave').onclick=()=>{const n=($('#pn').value||'').trim();if(!n)return;const P=loadProfiles();P[n]=snap();localStorage.setItem('profiles',JSON.stringify(P));$('#pn').value='';buildPlist();buildCompare()};
+buildCompare();$('#cpbtn').onclick=compareProfiles;
 buildOpps();buildGrp();buildKw();$('#q').oninput=buildKw;render();
 </script>
 </body>
