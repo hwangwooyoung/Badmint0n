@@ -42,7 +42,7 @@ details{border-top:1px solid var(--line);padding:8px 0}summary{cursor:pointer;fo
 <body>
 <main>
 <h1>배드민턴 공략 도우미</h1>
-<p class="sub">경기 종류, 상대 스타일, 경기장 조건을 고르면 대처법을 알려줍니다.</p>
+<p class="sub">경기 종류, 상대 스타일, 경기장 조건을 고르면 대처법을 알려줍니다.<br><span id="cases"></span></p>
 
 <section><h2>경기 종류</h2>
 <div class="seg" id="mode"><button data-m="s" aria-pressed="true">단식</button><button data-m="d" aria-pressed="false">복식</button></div></section>
@@ -56,6 +56,8 @@ details{border-top:1px solid var(--line);padding:8px 0}summary{cursor:pointer;fo
 
 <section><h2>내 강점 전술 <small style="font-weight:400;color:var(--mute)">(자신 있는 것)</small></h2><div class="chips" id="mine"></div>
 <h2 style="margin-top:14px">경기 상황</h2><div class="chips" id="sit"></div></section>
+
+<section><h2>내 상태·경기 조건</h2><div id="grp"></div></section>
 
 <section><h2>경기장 조건 <small style="font-weight:400;color:var(--mute)">(해당되는 것 모두)</small></h2>
 <div class="chips" id="venue"></div></section>
@@ -140,10 +142,31 @@ const KW={'샷 강점':SH.map(x=>[x[0]+' 강함',x[1]]),'샷 약점':SH.map(x=>[
 '이동·체력':P('첫 스텝 빠름:페이크와 템포 변화;첫 스텝 느림:빠른 공으로 시간 뺏기;앞 이동 느림:드롭·헤어핀 반복;뒤 이동 느림:깊은 클리어 반복;좌우 이동 약함:대각으로 좌우 흔들기;방향 전환 약함:한쪽 유도 후 반대로 급전환;점프 스매시 능함:높은 공 피하고 낮게 유지;후반 체력 저하:랠리 늘려 후반 소모 유도;회복 빠름:패턴을 쌓아 서서히 무너뜨리기;스플릿 스텝 없음:템포 변화로 반응 늦추기;리커버리 느림:친 뒤 빈 곳으로 빠르게;스텝 큼:몸 쪽 짧은 공으로 스텝 꼬이게;호흡 빨라짐:긴 랠리로 밀어붙이기;이동 범위 제한:좌우 넓게 배분'),
 '멘탈·운영':P('급함:서브 템포를 늦추기;냉정:패턴을 바꿔 예측 깨기;리드 시 소극적:리드 후에도 압박 유지;뒤질 때 무너짐:초반 점수 차 벌리기;실수 후 흔들림:직후 안정적인 공;듀스 강함:듀스 전에 끝내기;초반 약함:초반 빠르게 점수 벌리기;후반 강함:1세트에 승부 보기;패턴 반복:패턴 파악해 미리 위치;점수차 방심:앞서도 집중 유지;서브 리듬 일정:리듬 읽고 리턴 타이밍;판정 예민:논란 없는 확실한 인 공;분위기 좌우:연속 득점으로 흐름 선점;과감함:안전한 낮은 공으로 역이용'),
 '복식 전용':P('로테이션 느림:방향 전환으로 공백 노리기;전위 강함:전위 머리 위 플릭과 후위 깊이;후위만 공격:후위 유도 대신 전위에 짧은 공;사이드바이사이드 고집:중앙과 앞뒤 공간;톱앤백 고집:전위 옆 사이드로 드라이브;소통 부족:두 사람 사이 중앙;실력 차 큼:약한 쪽 집중·강한 쪽 우회;중앙 미룸:몸 쪽 중앙 반복;드라이브 랠리 강:높이 변화로 흐름 끊기;리턴 약함:서브 후 3구 공격;헤어핀 강함:플릭으로 앞 압박 회피;역할 분담 명확:공격수 우회·수비수 공략;서브 후 압박 강함:낮고 빠른 T라인 리턴;한 명 실수 잦음:그 선수에게 지속 공략'),
-'선수 특성':P('키 큼:낮은 공과 사이드로;키 작음:높고 깊은 클리어;손목 강함:플릭 대비 뒤 커버;손목 약함:빠른 드라이브 교환;초보:단순 패턴으로 넓게 배분;중급 동호인:기본 샷 정확도 우선;엘리트:실수 최소화·초반 탐색;시니어:랠리 늘려 체력 관리 유도;청소년:변화구·템포로 대응;라켓 무거움:빠른 손목 교환;그립 두꺼움:앞 공 유도;그립 얇음:손목 페이크 주의')};
+'선수 특성':P('키 큼:낮은 공과 사이드로;키 작음:높고 깊은 클리어;손목 강함:플릭 대비 뒤 커버;손목 약함:빠른 드라이브 교환;초보:단순 패턴으로 넓게 배분;중급 동호인:기본 샷 정확도 우선;엘리트:실수 최소화·초반 탐색;시니어:랠리 늘려 체력 관리 유도;청소년:변화구·템포로 대응;라켓 무거움:빠른 손목 교환;그립 두꺼움:앞 공 유도;그립 얇음:손목 페이크 주의'),
+'장비·컨디션':P('라켓 최근 교체:적응 안 됐을 수 있어 다양한 코스 시도;신발 새 것:그립 감 낯설어 급정지 유도;부상 부위 있음:그 부위 방향으로 이동 요구는 신중히 판단;몸풀기 부족:초반 빠른 공격으로 승부;장시간 이동 후 경기:체력 저하 고려해 랠리 늘리기;연속 경기(더블헤더):후반 체력 저하 노려 랠리 늘리기;컨디션 좋아 보임:패턴 탐색에 시간 더 투자;그립 자주 고쳐 잡음:빠른 연속 공격으로 리듬 차단;스트링 텐션 높음(하드):컨트롤 위주, 파워 대결 자제;스트링 텐션 낮음(소프트):깊은 공 대비, 파워 대결 유리;안경 착용:빠른 좌우 흔들기로 시야 제한 활용;장비 트러블 잦음:안정적인 랠리로 흐름 유지'),
+'스탠스·자세':P('라켓 준비 늦음:빠른 연속 공격;백스윙 큼:짧고 빠른 타점 노림;임팩트 늦음:몸 쪽 빠른 공;오버헤드 자세 큼:템포 변화로 타이밍 뺏기;네트 앞 자세 낮음:높은 플릭으로 역공;수비 자세 높음:몸 쪽 낮은 스매시;스탠스 좁음:좌우 흔들기 효과적;스탠스 넓음:앞뒤 흔들기 효과적;라켓 다운 습관:빠른 재공격;준비 자세 늦게 복귀:연속 공격으로 마무리;시선 상대 안 봄:페이크 동작 활용;그립 체인지 느림:포·백 전환 요구하는 코스')};
 const TIP={},CAT={};for(const c in KW)KW[c].forEach(x=>{TIP[x[0]]=x[1];CAT[x[0]]=c});
-const DET={'샷 강점':['그 샷을 치기 어려운 코스로 보내고 같은 코스는 3번 연속 쓰지 마세요.','파트너와 함께 그 선수에게 공이 몰리지 않게 분산하세요.'],'샷 약점':['약점 샷이 나올 코스로 3~4구 안에 유도하고 통하면 반복하세요.','약점 선수에게 연속 배분해 파트너와의 호흡을 흔드세요.'],'코트 구역 약점':['해당 구역에 2~3번 보낸 뒤 반대편으로 한 번 전환하세요.','두 사람 사이 경계와 연결해 서로 미루게 만드세요.'],'이동·체력':['움직임이 큰 순서로 배분하고 초반에 소모시키세요.','약한 쪽 선수의 이동 범위를 넓히세요.'],'멘탈·운영':['점수 상황에 맞춰 압박 타이밍을 정하고 실행하세요.','표정과 말수 변화를 보고 흔들리는 쪽을 공략하세요.'],'복식 전용':['콜 사인으로 역할을 미리 정하고 공략하세요.','파트너와 담당 구역을 다시 확인하세요.'],'선수 특성':['초반 3~5랠리에서 반응을 확인해 검증하세요.','두 상대를 따로 관찰해 각각 적용하세요.']};
-P('천장 높음:하이클리어 활용이 쉬워 긴 랠리에 유리;조명 어두움:셔틀 시인성이 낮아 안전한 공 위주;조명 반사 심함:눈부심 있는 하이볼 주의;바닥 먼지 많음:미끄러우니 급정지를 줄이기;바닥 끈적임:발이 걸리니 작은 스텝;코트 라인 흐림:라인 근처 공은 신중하게;네트 처짐:네트 위 낮은 공과 헤어핀 유리;네트 높음:클리어 활용 늘리고 낮은 드라이브 줄이기;오리털 셔틀:속도 확인 후 궤적이 일정해 정확한 드롭;나일론 셔틀:느리고 오래 가서 랠리가 길어짐;온도 높음:체력 소모가 크니 빠른 3구 공격;온도 낮음:워밍업을 충분히 하고 초반 무리 금지;습도 높음:셔틀이 무거워 스매시에 힘 더 실기;건조함:셔틀이 빨라 클리어 조절;에어컨 바로 아래 코트:바람에 밀려 하이볼 조절;출입문 근처 코트:외풍 확인 후 드롭 활용;벽 가까운 코트:후방이 좁아 스매시 후 대비;중앙 코트:양옆 코트 간섭 주의하고 집중 유지;관중 앞 코트:긴장을 관리하고 서브 루틴 유지;오전 경기:몸이 덜 풀려 초반 빠른 승부 대비;저녁 경기:체력이 누적되어 랠리 조절;상대 응원 많음:소음에 흔들리지 않게 서브 루틴 유지;자체 심판 경기:인·아웃 콜을 명확히 하기').forEach((x,i)=>{VEN['x'+i]={n:x[0],t:x[1]}});
+const DET={'샷 강점':['그 샷을 치기 어려운 코스로 보내고 같은 코스는 3번 연속 쓰지 마세요.','파트너와 함께 그 선수에게 공이 몰리지 않게 분산하세요.'],'샷 약점':['약점 샷이 나올 코스로 3~4구 안에 유도하고 통하면 반복하세요.','약점 선수에게 연속 배분해 파트너와의 호흡을 흔드세요.'],'코트 구역 약점':['해당 구역에 2~3번 보낸 뒤 반대편으로 한 번 전환하세요.','두 사람 사이 경계와 연결해 서로 미루게 만드세요.'],'이동·체력':['움직임이 큰 순서로 배분하고 초반에 소모시키세요.','약한 쪽 선수의 이동 범위를 넓히세요.'],'멘탈·운영':['점수 상황에 맞춰 압박 타이밍을 정하고 실행하세요.','표정과 말수 변화를 보고 흔들리는 쪽을 공략하세요.'],'복식 전용':['콜 사인으로 역할을 미리 정하고 공략하세요.','파트너와 담당 구역을 다시 확인하세요.'],'선수 특성':['초반 3~5랠리에서 반응을 확인해 검증하세요.','두 상대를 따로 관찰해 각각 적용하세요.'],'장비·컨디션':['눈에 보이는 신호이므로 초반에 반영하고 랠리로 검증하세요.','컨디션은 세트가 진행되며 바뀌니 세트마다 다시 확인하세요.'],'스탠스·자세':['자세 습관은 몇 구만 봐도 드러나니 즉시 코스를 조정하세요.','파트너에게도 관찰한 자세 습관을 공유하세요.']};
+P('천장 높음:하이클리어 활용이 쉬워 긴 랠리에 유리;조명 어두움:셔틀 시인성이 낮아 안전한 공 위주;조명 반사 심함:눈부심 있는 하이볼 주의;바닥 먼지 많음:미끄러우니 급정지를 줄이기;바닥 끈적임:발이 걸리니 작은 스텝;코트 라인 흐림:라인 근처 공은 신중하게;네트 처짐:네트 위 낮은 공과 헤어핀 유리;네트 높음:클리어 활용 늘리고 낮은 드라이브 줄이기;오리털 셔틀:속도 확인 후 궤적이 일정해 정확한 드롭;나일론 셔틀:느리고 오래 가서 랠리가 길어짐;온도 높음:체력 소모가 크니 빠른 3구 공격;온도 낮음:워밍업을 충분히 하고 초반 무리 금지;습도 높음:셔틀이 무거워 스매시에 힘 더 실기;건조함:셔틀이 빨라 클리어 조절;에어컨 바로 아래 코트:바람에 밀려 하이볼 조절;출입문 근처 코트:외풍 확인 후 드롭 활용;벽 가까운 코트:후방이 좁아 스매시 후 대비;중앙 코트:양옆 코트 간섭 주의하고 집중 유지;관중 앞 코트:긴장을 관리하고 서브 루틴 유지;오전 경기:몸이 덜 풀려 초반 빠른 승부 대비;저녁 경기:체력이 누적되어 랠리 조절;상대 응원 많음:소음에 흔들리지 않게 서브 루틴 유지;자체 심판 경기:인·아웃 콜을 명확히 하기;천장 낮음 매우:하이클리어 절대 금지, 드리븐 위주;바람 좌→우:좌측 클리어는 짧게, 우측은 깊게 조절;바람 우→좌:우측 클리어는 짧게, 좌측은 깊게 조절;맞바람 코트:파워 스매시보다 드롭·헤어핀 비중 확대;순풍 코트:클리어 힘을 줄이고 아웃 주의;마루 신품(미끄러움):작은 보폭으로 안정적 스텝;마루 노후(고르지 않음):급격한 방향전환 자제;카펫형 코트:반발력 약해 스매시 힘 더 싣기;야간 조명 노란빛:셔틀 색 구분이 어려워 안전 위주;실외 직사광선:태양 방향 고려해 코트 교대 활용;소나기 우려 실외:그립 미끄럼 대비 타월 준비;고지대 경기장:공기 저항 적어 셔틀 더 멀리 감;해안가 습한 실외:셔틀 무거워져 강타 필요;연습 없이 바로 경기:초반 랠리로 감 찾기 우선;네트 기둥 흔들림:네트 근처 강타 자제;코트 표면 반사광:서브 시 시야 확보 위치 조정;복식 코트 라인 혼동:안쪽 단식라인과 착각 주의;셔틀 자주 교체:셔틀 속도 매 세트 재확인;셔틀 교체 없음:후반 무거워진 셔틀 감안해 힘 조절').forEach((x,i)=>{VEN['x'+i]={n:x[0],t:x[1]}});
+KW['서브·리시브 성향']=P('하이서브 즐김:리턴은 스매시를 준비;로우서브 정확:리턴은 헤어핀·푸시로 대비;플릭 서브 구사:후방 커버를 준비;서브 코스 고정:코스를 예측해 선공;리턴이 짧음:3구 공격 준비;리턴이 깊음:후위 이동을 대비;리턴 푸시 선호:서브를 깊게 보내기;리턴 헤어핀 선호:서브 후 전위에서 대기;리턴 드라이브 선호:서브 코스를 다양하게;서브 폴트 잦음:안정적으로 받고 실수 기다리기');
+KW['랠리 패턴']=P('클리어 후 드롭 반복:드롭을 예측해 앞으로 미리 이동;스매시 후 네트 전진:블록을 짧게 떨어뜨리기;크로스 선호:대각을 예측해 위치 잡기;스트레이트 선호:라인 수비를 강화;드롭 후 헤어핀:앞 승부를 피하고 깊게 보내기;3구 결정 시도:3구 방어를 준비;공격 후 뒤로 물러남:앞 짧은 공으로 흔들기;속도 변화 잦음:침착하게 페이스 유지;낮은 클리어 사용:공을 더 높이 띄워 흐름 바꾸기;5구 이후 실수 많음:랠리를 길게 이어가기');
+['서브·리시브 성향','랠리 패턴'].forEach(c=>{KW[c].forEach(x=>{TIP[x[0]]=x[1];CAT[x[0]]=c})});
+DET['서브·리시브 성향']=['첫 3구를 미리 정해 두고 서브 코스에 맞춰 대응하세요.','서브 후 전위와 후위의 첫 동작을 미리 정하세요.'];DET['랠리 패턴']=['패턴이 두 번 반복되면 세 번째는 미리 위치를 잡고 차단하세요.','패턴을 파트너와 공유하고 담당 구역을 나누세요.'];
+const G={'세트':{'1세트':[{tmp:1},'초반 탐색 위주로 상대 반응을 확인하세요.'],'2세트':[{ral:.5},'1세트에서 통한 전술을 이어가세요.'],'최종 세트':[{fst:.5,tmp:.5},'안전한 공 비중을 높이고 집중을 유지하세요.']},
+'서브권':{'내 서브':[{fst:1},'서브 후 3구 공격을 준비하세요.'],'상대 서브':[{drv:1,bdy:.5},'리턴 위치를 앞으로 당기고 코스를 미리 정하세요.']},
+'내 체력':{'충분':[{ral:1},'랠리를 길게 가져가도 좋습니다.'],'피곤':[{fst:1.5,ral:-1.5},'랠리를 짧게 끊고 안전한 공을 쓰세요.']},
+'상대 수준':{'나보다 강함':[{tmp:1,ral:.5,smh:-.5},'실수를 줄이고 템포 변화로 흔드세요.'],'나보다 약함':[{smh:1,fst:.5},'공격 비중을 높이되 성급함은 조심하세요.']},
+'주의 부위':{'어깨':[{smh:-1,clr:-.5},'무리한 스매시·하이클리어를 줄이고 드롭을 늘리세요.'],'무릎·발목':[{crs:-1,fst:-.5},'급한 방향 전환을 피하고 작은 스텝을 쓰세요.'],'손목':[{flk:-1,drv:-.5},'빠른 드라이브 교환과 플릭을 줄이세요.']},
+'코트 사이드':{'바람 뒤쪽':[{clr:.5,smh:.5},'바람을 등지니 클리어·스매시가 유리합니다.'],'바람 앞쪽':[{drp:1,clr:-1},'클리어가 밀리니 드롭과 낮은 공을 늘리세요.']},
+'내 대형(복식)':{'사이드바이사이드':[{drv:1,bdy:.5},'중앙 담당을 미리 정하세요.'],'톱앤백':[{smh:1,flk:.5},'후위가 공격하고 전위가 차단하세요.'],'로테이션':[{crs:1},'공을 친 뒤 바로 자리를 바꾸세요.']}};
+function buildGrp(){const el=$('#grp');el.innerHTML='';for(const g in G){if(g==='내 대형(복식)'&&st.m==='s')continue;const w=document.createElement('div');w.className='who';w.innerHTML='<b>'+g+'</b><div class="chips"></div>';el.appendChild(w);
+ for(const o in G[g]){const b=document.createElement('button');b.className='chip';b.textContent=o;b.setAttribute('aria-pressed',st.g[g]===o);b.onclick=()=>{if(st.g[g]===o)delete st.g[g];else st.g[g]=o;buildGrp();render()};w.lastChild.appendChild(b)}}}
+const SYN=new Set('clr>drp,drp>clr,clr>smh,drp>smh,drv>drp,flk>clr,crs>smh,tmp>smh,bdy>drv,drp>crs,clr>crs,drv>flk,fst>smh,ral>tmp,drp>flk,crs>drp,tmp>drp,bdy>smh,flk>smh,clr>tmp'.split(','));
+function patHtml(r){const p={},nm={};r.forEach(x=>{p[x[2]]=x[1]/100;nm[x[2]]=x[0].split(' ')[0]});const ks=T.map(t=>t[0]),o=[];
+ for(const a of ks)for(const b of ks)if(b!==a)for(const c of ks)if(c!==b)o.push([[a,b,c],p[a]*p[b]*p[c]*(1+(SYN.has(a+'>'+b)?.8:0)+(SYN.has(b+'>'+c)?.8:0))]);
+ o.sort((x,y)=>y[1]-x[1]);const t=o.slice(0,5),s=t.reduce((a,x)=>a+x[1],0);
+ return '<h2 style="margin-top:16px">추천 3구 패턴 TOP5 <small style="font-weight:400;color:var(--mute)">(연결이 좋은 조합에 가산)</small></h2><ol>'+t.map(x=>'<li>'+x[0].map(k=>nm[k]).join(' → ')+' <small style="color:var(--mute)">('+(x[1]/s*100).toFixed(0)+'%)</small></li>').join('')+'</ol>'}
+function casesTxt(){const d=st.m==='d'?2:1,K=Object.values(KW).reduce((a,c)=>a+c.length,0),V=Object.keys(VEN).length,gb=Object.values(G).reduce((a,g)=>a+Math.log2(Object.keys(g).length+1),0);return '가능한 입력 조합 약 10^'+Math.round((12*d+K*d+V+T.length+2+gb)*.301)+'가지 (키워드 '+K+'개 · 경기장 '+V+'개)'}
 const T=[['clr','깊은 클리어',/클리어|깊은|후방|뒤로/],['drp','드롭·헤어핀 (앞 공략)',/드롭|헤어핀|앞|짧은|네트/],['smh','스매시·결정타',/스매시|공격|마무리|결정/],['drv','드라이브·블록',/드라이브|블록|낮은 공|낮게/],['flk','플릭·전위 견제',/플릭|전위/],['bdy','몸 쪽·중앙 공략',/몸|중앙|사이/],['crs','대각·좌우 흔들기',/대각|좌우|크로스|방향 전환/],['tmp','템포·페이크 변화',/템포|페이크|리듬|패턴/],['ral','랠리 길게 끌기',/랠리|체력|소모/],['fst','빠른 3구 공격',/3구|속공|빠르|초반|서브/]];
 const VADJ={hi:{clr:-2,drp:1},ac:{clr:-1,smh:-1,drp:1},out:{smh:-1,drp:1,drv:1},slw:{smh:1,clr:1},fast:{clr:-1,drp:1},slp:{crs:1},lgt:{clr:-1},sun:{clr:-1}};
 const SIT={lead:{n:'점수 앞서는 중',a:{ral:1,tmp:1}},close:{n:'접전·듀스',a:{tmp:1,drv:1}},behind:{n:'점수 뒤지는 중',a:{fst:2,smh:1}}};
@@ -160,13 +183,14 @@ function calc(m,ka,kb,kk,vs){const sc={};T.forEach(t=>sc[t[0]]=0);
  vs.forEach(k=>{add(VEN[k].t,1);const a=VADJ[k];if(a)for(const z in a)sc[z]+=a[z]});
  const R=REC[ctx()]||{},agg={};for(const c in REC){if(c[0]!==st.m)continue;for(const k in REC[c]){const r=REC[c][k],a=agg[k]||(agg[k]=[0,0]);a[0]+=r[0];a[1]+=r[1]}}
  T.forEach(t=>{const r=R[t[0]],q=r||agg[t[0]];if(q)sc[t[0]]+=((q[0]+1)/(q[1]+2)-.5)*8*Math.min(1,q[1]/5)*(r?1:.5)});
+ Object.entries(st.g).forEach(([g,o])=>{if(g==='내 대형(복식)'&&m==='s')return;const a=G[g][o][0];for(const z in a)sc[z]+=a[z]});
  st.mine.forEach(k=>sc[k]+=1.5);if(st.sit)for(const z in SIT[st.sit].a)sc[z]+=SIT[st.sit].a[z];
  const mx=Math.max(...Object.values(sc)),e=T.map(t=>Math.exp((sc[t[0]]-mx)*.45)),sum=e.reduce((a,b)=>a+b,0);
- return T.map((t,i)=>[t[1],e[i]/sum*100]).sort((a,b)=>b[1]-a[1])}
+ return T.map((t,i)=>[t[1],e[i]/sum*100,t[0]]).sort((a,b)=>b[1]-a[1])}
 function probHtml(m,ka,kb,kk,vs){const rc=recN(),r=calc(m,ka,kb,kk,vs),n=ka.length+kb.length+kk.length+vs.length+st.mine.size+(st.sit?1:0)+Math.min(rc,10),lv=n<3?'낮음':n<7?'보통':'높음';
- return '<section><h2>전술 추천 확률</h2>'+r.map(x=>'<div class="bar"><span>'+x[0]+'</span><i style="width:'+Math.max(2,x[1]*2.2)+'%"></i><b>'+x[1].toFixed(1)+'%</b></div>').join('')+'<p class="note">입력 정보 '+n+'개 · 이 상대 유형 기록 '+rc+'경기 반영 · 추정 신뢰도 '+lv+'. 기본값은 규칙 기반 추정이며, 기록이 쌓일수록 내 경기 데이터에 맞게 조정됩니다.</p></section>'}
+ return '<section><h2>전술 추천 확률</h2>'+r.map(x=>'<div class="bar"><span>'+x[0]+'</span><i style="width:'+Math.max(2,x[1]*2.2)+'%"></i><b>'+x[1].toFixed(1)+'%</b></div>').join('')+patHtml(r)+'<p class="note">입력 정보 '+n+'개 · 이 상대 유형 기록 '+rc+'경기 반영 · 추정 신뢰도 '+lv+'. 기본값은 규칙 기반 추정이며, 기록이 쌓일수록 내 경기 데이터에 맞게 조정됩니다.</p></section>'}
 function buildSit(){const el=$('#sit');el.innerHTML='';for(const k in SIT){const b=document.createElement('button');b.className='chip';b.textContent=SIT[k].n;b.setAttribute('aria-pressed',st.sit===k);b.onclick=()=>{st.sit=st.sit===k?'':k;buildSit();render()};el.appendChild(b)}}
-const st={m:'s',a:new Set(),b:new Set(),v:new Set(),k:new Set(),k2:new Set(),kt:'a',mine:new Set(),sit:''};
+const st={m:'s',a:new Set(),b:new Set(),v:new Set(),k:new Set(),k2:new Set(),kt:'a',g:{},mine:new Set(),sit:''};
 const $=s=>document.querySelector(s);
 function chips(el,obj,set,cb){el.innerHTML='';for(const k in obj){const b=document.createElement('button');b.className='chip';b.textContent=obj[k].n;b.setAttribute('aria-pressed',set.has(k));b.onclick=()=>{set.has(k)?set.delete(k):set.add(k);b.setAttribute('aria-pressed',set.has(k));cb()};el.appendChild(b)}}
 function buildOpps(){const o=$('#opps');o.innerHTML='';const list=st.m==='s'?[['상대 선수','a']]:[['상대 A (전위 또는 왼쪽)','a'],['상대 B (후위 또는 오른쪽)','b']];
@@ -175,11 +199,13 @@ function buildKw(){const q=($('#q').value||'').trim(),box=$('#kw');box.innerHTML
  for(const c in KW){if(c==='복식 전용'&&st.m==='s')continue;const it=KW[c].filter(x=>!q||x[0].includes(q)||c.includes(q));if(!it.length)continue;
   const d=document.createElement('details');d.open=!!q;d.innerHTML='<summary>'+c+' ('+it.length+')</summary><div class="chips"></div>';box.appendChild(d);
   chips(d.lastChild,Object.fromEntries(it.map(x=>[x[0],{n:x[0]}])),st.m==='d'&&st.kt==='b'?st.k2:st.k,render)}}
-function render(){const out=$('#out'),m=st.m;const ka=[...st.a],kb=m==='d'?[...st.b]:[];const dbl=x=>KW['복식 전용'].some(y=>y[0]===x),kkA=[...st.k].filter(x=>m==='d'||!dbl(x)),kkB=m==='d'?[...st.k2]:[],kk=[...kkA,...kkB];
+function render(){const out=$('#out'),m=st.m;$('#cases').textContent=casesTxt();const ka=[...st.a],kb=m==='d'?[...st.b]:[];const dbl=x=>KW['복식 전용'].some(y=>y[0]===x),kkA=[...st.k].filter(x=>m==='d'||!dbl(x)),kkB=m==='d'?[...st.k2]:[],kk=[...kkA,...kkB];
  if(!ka.length&&!kb.length&&!kk.length){out.innerHTML='<div class="empty">스타일이나 세부 키워드를 하나 이상 선택하면 공략법이 나타납니다.</div>';return}
  const all=[...new Set([...ka,...kb])];const lead=all.length?STY[all[0]].h[m]:'선택한 세부 특징을 중심으로 상대의 약점부터 공략하세요.';
  let h='<section class="hero"><small>핵심 전략</small><p>'+lead+'</p></section>';
  h+=probHtml(m,ka,kb,kk,[...st.v]);
+ const gt=Object.entries(st.g).filter(([g])=>m==='d'||g!=='내 대형(복식)').map(([g,o])=>'<li><b>'+g+' '+o+':</b> '+G[g][o][1]+'</li>');
+ if(gt.length)h+='<section><h2>상황별 조언</h2><ul>'+gt.join('')+'</ul></section>';
  const kl=(a,lab)=>a.length?'<section><h2>'+lab+'</h2><ul>'+a.map(x=>'<li><b>'+x+':</b> '+TIP[x]+'<br><small style="color:var(--mute)">'+DET[CAT[x]][m==='d'?1:0]+'</small></li>').join('')+'</ul></section>':'';
  h+=m==='d'?kl(kkA,'상대 A 세부 특징 공략')+kl(kkB,'상대 B 세부 특징 공략'):kl(kkA,'세부 특징 공략');
  const grp=(lab,keys)=>keys.length?'<section><h2>'+lab+'</h2>'+keys.map(k=>'<div class="who"><span class="tag">'+STY[k].n+'</span><ul>'+STY[k][m].map(t=>'<li>'+t+'</li>').join('')+'</ul></div>').join('')+'</section>':'';
@@ -194,7 +220,7 @@ function render(){const out=$('#out'),m=st.m;const ka=[...st.a],kb=m==='d'?[...s
  const vs=[...st.v];
  if(vs.length)h+='<section class="warn"><h2>경기장 대응</h2><ul>'+vs.map(k=>'<li><b>'+VEN[k].n+':</b> '+VEN[k].t+'</li>').join('')+'</ul></section>';
  out.innerHTML=h}
-document.querySelectorAll('#mode button').forEach(b=>b.onclick=()=>{st.m=b.dataset.m;document.querySelectorAll('#mode button').forEach(x=>x.setAttribute('aria-pressed',x===b));buildOpps();$('#kt').style.display=st.m==='d'?'inline-flex':'none';buildKw();render()});
+document.querySelectorAll('#mode button').forEach(b=>b.onclick=()=>{st.m=b.dataset.m;document.querySelectorAll('#mode button').forEach(x=>x.setAttribute('aria-pressed',x===b));buildOpps();buildGrp();$('#kt').style.display=st.m==='d'?'inline-flex':'none';buildKw();render()});
 document.querySelectorAll('#kt button').forEach(b=>b.onclick=()=>{st.kt=b.dataset.t;document.querySelectorAll('#kt button').forEach(x=>x.setAttribute('aria-pressed',x===b));buildKw()});
 chips($('#venue'),VEN,st.v,render);chips($('#mine'),Object.fromEntries(T.map(t=>[t[0],{n:t[1]}])),st.mine,render);buildSit();$('#rt').innerHTML=T.map(t=>'<option value="'+t[0]+'">'+t[1]+'</option>').join('');$('#ok').onclick=()=>record(1);$('#ng').onclick=()=>record(0);$('#rst').onclick=()=>{REC={};saveRec();render()};$('#exp').onclick=()=>{const t=$('#io');t.value=JSON.stringify(REC);t.select()};$('#imp').onclick=()=>{try{const o=JSON.parse($('#io').value);if(o&&typeof o==='object'){REC=o;saveRec();render()}}catch(e){$('#io').value='형식이 올바르지 않습니다. 내보내기로 만든 텍스트를 그대로 붙여넣으세요.'}};buildOpps();buildKw();$('#q').oninput=buildKw;render();
 </script>
