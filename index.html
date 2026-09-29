@@ -44,6 +44,9 @@ details{border-top:1px solid var(--line);padding:8px 0}summary{cursor:pointer;fo
 <h1>배드민턴 공략 도우미</h1>
 <p class="sub">경기 종류, 상대 스타일, 경기장 조건을 고르면 대처법을 알려줍니다.<br><span id="cases"></span></p>
 
+<section><h2>경기 전 체크리스트 <small style="font-weight:400;color:var(--mute)">(부가 기능)</small></h2>
+<ul id="chk" style="list-style:none;padding:0;margin:0"></ul></section>
+
 <section><h2>경기 종류</h2>
 <div class="seg" id="mode"><button data-m="s" aria-pressed="true">단식</button><button data-m="d" aria-pressed="false">복식</button></div></section>
 
@@ -55,12 +58,19 @@ details{border-top:1px solid var(--line);padding:8px 0}summary{cursor:pointer;fo
 <input id="q" type="search" placeholder="키워드 검색 (예: 백핸드, 체력, 스매시)" aria-label="키워드 검색"><div id="kw"></div></section>
 
 <section><h2>내 강점 전술 <small style="font-weight:400;color:var(--mute)">(자신 있는 것)</small></h2><div class="chips" id="mine"></div>
-<h2 style="margin-top:14px">경기 상황</h2><div class="chips" id="sit"></div></section>
+<h2 style="margin-top:14px">경기 상황 <small style="font-weight:400;color:var(--mute)">(점수 입력 시 자동 반영)</small></h2>
+<div style="display:flex;gap:10px;align-items:center;margin-bottom:10px"><label>내 점수 <input id="ms" type="number" min="0" max="30" value="0" style="width:56px;font:inherit;padding:5px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)"></label>
+<label>상대 점수 <input id="os" type="number" min="0" max="30" value="0" style="width:56px;font:inherit;padding:5px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)"></label></div>
+<div class="chips" id="sit"></div></section>
 
 <section><h2>내 상태·경기 조건</h2><div id="grp"></div></section>
 
 <section><h2>경기장 조건 <small style="font-weight:400;color:var(--mute)">(해당되는 것 모두)</small></h2>
 <div class="chips" id="venue"></div></section>
+
+<section><h2>상대 프로필 저장 <small style="font-weight:400;color:var(--mute)">(부가 기능 · 다음에 같은 상대 만날 때 재사용)</small></h2>
+<div class="chips"><input id="pn" placeholder="상대 이름 (예: 김철수)" style="font:inherit;padding:7px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)"><button class="chip" id="psave">현재 선택 저장</button></div>
+<div class="chips" id="plist" style="margin-top:10px"></div></section>
 
 <section><h2>경기 기록으로 학습시키기</h2>
 <p class="note" style="margin:0 0 10px">위에서 상대 스타일을 고른 뒤, 실제로 쓴 전술이 통했는지 기록하세요. 같은 유형의 추천 확률이 내 기록에 맞게 조정됩니다. 기록은 이 브라우저에만 저장됩니다.</p>
@@ -188,7 +198,26 @@ function calc(m,ka,kb,kk,vs){const sc={};T.forEach(t=>sc[t[0]]=0);
  const mx=Math.max(...Object.values(sc)),e=T.map(t=>Math.exp((sc[t[0]]-mx)*.45)),sum=e.reduce((a,b)=>a+b,0);
  return T.map((t,i)=>[t[1],e[i]/sum*100,t[0]]).sort((a,b)=>b[1]-a[1])}
 function probHtml(m,ka,kb,kk,vs){const rc=recN(),r=calc(m,ka,kb,kk,vs),n=ka.length+kb.length+kk.length+vs.length+st.mine.size+(st.sit?1:0)+Math.min(rc,10),lv=n<3?'낮음':n<7?'보통':'높음';
+ window.__last={m,ka,kb,kk,vs,r};
  return '<section><h2>전술 추천 확률</h2>'+r.map(x=>'<div class="bar"><span>'+x[0]+'</span><i style="width:'+Math.max(2,x[1]*2.2)+'%"></i><b>'+x[1].toFixed(1)+'%</b></div>').join('')+patHtml(r)+'<p class="note">입력 정보 '+n+'개 · 이 상대 유형 기록 '+rc+'경기 반영 · 추정 신뢰도 '+lv+'. 기본값은 규칙 기반 추정이며, 기록이 쌓일수록 내 경기 데이터에 맞게 조정됩니다.</p></section>'}
+const CHK=['상대 워밍업 스트로크 관찰(스매시·드롭 위력 확인)','상대 라켓·손잡이 쥐는 손 확인(왼손잡이 여부)','코트 바닥·조명·바람 상태 확인','내 스트링·신발끈 점검','서브 전 루틴(호흡·루틴 동작) 정하기','복식이면 파트너와 콜 사인·로테이션 합의'];
+let chkState=new Array(CHK.length).fill(false);
+function buildChk(){$('#chk').innerHTML=CHK.map((t,i)=>'<li style="padding:5px 0"><label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer"><input type="checkbox" '+(chkState[i]?'checked':'')+' data-i="'+i+'" style="margin-top:3px"><span'+(chkState[i]?' style="opacity:.55;text-decoration:line-through"':'')+'>'+t+'</span></label></li>').join('');
+ $('#chk').querySelectorAll('input').forEach(c=>c.onchange=()=>{chkState[c.dataset.i]=c.checked;buildChk()})}
+function syncScore(){const my=+$('#ms').value||0,op=+$('#os').value||0,d=my-op;
+ st.sit=(my>=20&&op>=20)?'close':d>=3?'lead':d<=-3?'behind':'';buildSit();render()}
+function snap(){return{m:st.m,a:[...st.a],b:[...st.b],v:[...st.v],k:[...st.k],k2:[...st.k2],mine:[...st.mine]}}
+function loadProfiles(){try{return JSON.parse(localStorage.getItem('profiles')||'{}')}catch(e){return{}}}
+function buildPlist(){const P=loadProfiles(),el=$('#plist');el.innerHTML=Object.keys(P).length?'':'<span class="note">저장된 프로필이 없습니다.</span>';
+ Object.keys(P).forEach(n=>{const w=document.createElement('span');w.style.cssText='display:inline-flex;gap:4px';
+  const lb=document.createElement('button');lb.className='chip';lb.textContent='📂 '+n;lb.onclick=()=>{const s=P[n];st.m=s.m;st.a=new Set(s.a);st.b=new Set(s.b);st.v=new Set(s.v);st.k=new Set(s.k);st.k2=new Set(s.k2);st.mine=new Set(s.mine);
+   document.querySelectorAll('#mode button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.m===st.m));$('#kt').style.display=st.m==='d'?'inline-flex':'none';
+   buildOpps();chips($('#venue'),VEN,st.v,render);chips($('#mine'),Object.fromEntries(T.map(t=>[t[0],{n:t[1]}])),st.mine,render);buildKw();render()};
+  const db=document.createElement('button');db.className='chip';db.textContent='삭제';db.onclick=()=>{const P2=loadProfiles();delete P2[n];localStorage.setItem('profiles',JSON.stringify(P2));buildPlist()};
+  w.appendChild(lb);w.appendChild(db);el.appendChild(w)})}
+function copySummary(){const{m,ka,kb,kk,vs,r}=window.__last||{};if(!r)return;const L=x=>x.length?x.join(', '):'없음';
+ let t='[배드민턴 공략 요약]\n형식: '+(m==='s'?'단식':'복식')+'\n상대 스타일: '+L(ka.map(k=>STY[k].n))+(m==='d'?' / '+L(kb.map(k=>STY[k].n)):'')+'\n세부 키워드: '+L(kk)+'\n경기장: '+L(vs.map(k=>VEN[k].n))+'\n추천 전술 1위: '+r[0][0]+' ('+r[0][1].toFixed(1)+'%), 2위: '+r[1][0]+' ('+r[1][1].toFixed(1)+'%)\n';
+ navigator.clipboard?.writeText(t).catch(()=>{});const io=$('#io');if(io){io.value=t;io.select()}}
 function buildSit(){const el=$('#sit');el.innerHTML='';for(const k in SIT){const b=document.createElement('button');b.className='chip';b.textContent=SIT[k].n;b.setAttribute('aria-pressed',st.sit===k);b.onclick=()=>{st.sit=st.sit===k?'':k;buildSit();render()};el.appendChild(b)}}
 const st={m:'s',a:new Set(),b:new Set(),v:new Set(),k:new Set(),k2:new Set(),kt:'a',g:{},mine:new Set(),sit:''};
 const $=s=>document.querySelector(s);
@@ -222,7 +251,12 @@ function render(){const out=$('#out'),m=st.m;$('#cases').textContent=casesTxt();
  out.innerHTML=h}
 document.querySelectorAll('#mode button').forEach(b=>b.onclick=()=>{st.m=b.dataset.m;document.querySelectorAll('#mode button').forEach(x=>x.setAttribute('aria-pressed',x===b));buildOpps();buildGrp();$('#kt').style.display=st.m==='d'?'inline-flex':'none';buildKw();render()});
 document.querySelectorAll('#kt button').forEach(b=>b.onclick=()=>{st.kt=b.dataset.t;document.querySelectorAll('#kt button').forEach(x=>x.setAttribute('aria-pressed',x===b));buildKw()});
-chips($('#venue'),VEN,st.v,render);chips($('#mine'),Object.fromEntries(T.map(t=>[t[0],{n:t[1]}])),st.mine,render);buildSit();$('#rt').innerHTML=T.map(t=>'<option value="'+t[0]+'">'+t[1]+'</option>').join('');$('#ok').onclick=()=>record(1);$('#ng').onclick=()=>record(0);$('#rst').onclick=()=>{REC={};saveRec();render()};$('#exp').onclick=()=>{const t=$('#io');t.value=JSON.stringify(REC);t.select()};$('#imp').onclick=()=>{try{const o=JSON.parse($('#io').value);if(o&&typeof o==='object'){REC=o;saveRec();render()}}catch(e){$('#io').value='형식이 올바르지 않습니다. 내보내기로 만든 텍스트를 그대로 붙여넣으세요.'}};buildOpps();buildKw();$('#q').oninput=buildKw;render();
+chips($('#venue'),VEN,st.v,render);chips($('#mine'),Object.fromEntries(T.map(t=>[t[0],{n:t[1]}])),st.mine,render);buildSit();$('#rt').innerHTML=T.map(t=>'<option value="'+t[0]+'">'+t[1]+'</option>').join('');$('#ok').onclick=()=>record(1);$('#ng').onclick=()=>record(0);$('#rst').onclick=()=>{REC={};saveRec();render()};$('#exp').onclick=()=>{const t=$('#io');t.value=JSON.stringify(REC);t.select()};$('#imp').onclick=()=>{try{const o=JSON.parse($('#io').value);if(o&&typeof o==='object'){REC=o;saveRec();render()}}catch(e){$('#io').value='형식이 올바르지 않습니다. 내보내기로 만든 텍스트를 그대로 붙여넣으세요.'}};document.body.addEventListener('click',e=>{if(e.target&&e.target.id==='csum')copySummary()});
+$('#ms').oninput=syncScore;$('#os').oninput=syncScore;
+buildChk();
+buildPlist();
+$('#psave').onclick=()=>{const n=($('#pn').value||'').trim();if(!n)return;const P=loadProfiles();P[n]=snap();localStorage.setItem('profiles',JSON.stringify(P));$('#pn').value='';buildPlist()};
+buildOpps();buildGrp();buildKw();$('#q').oninput=buildKw;render();
 </script>
 </body>
 </html>
