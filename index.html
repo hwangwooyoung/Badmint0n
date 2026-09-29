@@ -37,15 +37,58 @@ details{border-top:1px solid var(--line);padding:8px 0}summary{cursor:pointer;fo
 .bar span{flex:0 0 150px}.bar i{display:block;height:10px;border-radius:5px;background:var(--court);max-width:60%}.bar b{margin-left:auto;font-variant-numeric:tabular-nums}
 .note{color:var(--mute);font-size:.85rem;margin:10px 0 0}
 .empty{color:var(--mute);text-align:center;padding:26px 8px}
+@media print{body *{visibility:hidden}#out,#out *,#report,#report *{visibility:visible}#out{position:absolute;left:0;top:0;width:100%}#report{position:absolute;left:0;top:0;width:100%}h1{visibility:visible;position:absolute;top:-40px}#csum,.no-print{display:none!important}}
 </style>
 </head>
 <body>
 <main>
 <h1>배드민턴 공략 도우미</h1>
+<div class="chips no-print" style="margin-bottom:8px"><button class="chip" id="fsm">가 작게</button><button class="chip" id="fsp">가 크게</button><button class="chip" id="pdfbtn">🖨 인쇄/PDF 저장</button></div>
 <p class="sub">경기 종류, 상대 스타일, 경기장 조건을 고르면 대처법을 알려줍니다.<br><span id="cases"></span></p>
 
 <section><h2>경기 전 체크리스트 <small style="font-weight:400;color:var(--mute)">(부가 기능)</small></h2>
 <ul id="chk" style="list-style:none;padding:0;margin:0"></ul></section>
+
+<section><h2>경기 스코어보드 <small style="font-weight:400;color:var(--mute)">(부가 기능 · 서브권 자동 표시)</small></h2>
+<div style="display:flex;justify-content:center;align-items:center;gap:28px;text-align:center">
+ <div><div style="font-size:.85rem;color:var(--mute)">나 <span id="sbServeA">🏸</span></div><div id="sbScoreA" style="font-size:3rem;font-weight:800;line-height:1.1">0</div><div class="chips" style="justify-content:center"><button class="chip" id="sbAplus">+1</button><button class="chip" id="sbAminus">-1</button></div></div>
+ <div style="font-size:1.5rem;color:var(--mute)">:</div>
+ <div><div style="font-size:.85rem;color:var(--mute)"><span id="sbServeB"></span> 상대</div><div id="sbScoreB" style="font-size:3rem;font-weight:800;line-height:1.1">0</div><div class="chips" style="justify-content:center"><button class="chip" id="sbBplus">+1</button><button class="chip" id="sbBminus">-1</button></div></div>
+</div>
+<div class="chips" style="justify-content:center;margin-top:10px"><button class="chip" id="sbSwap">서브권 전환</button><button class="chip" id="sbReset">스코어 리셋</button></div>
+<p id="sbmsg" class="note" style="text-align:center;margin-top:6px"></p></section>
+
+<section><h2>세트 간 타이머 <small style="font-weight:400;color:var(--mute)">(부가 기능)</small></h2>
+<div class="chips"><button class="chip" data-s="60">1분(게임 사이)</button><button class="chip" data-s="120">2분(세트 사이)</button></div>
+<p id="tmdisp" style="font-size:2.2rem;font-weight:700;margin:12px 0 8px;font-variant-numeric:tabular-nums">00:00</p>
+<div class="chips"><button class="chip" id="tmstart">시작</button><button class="chip" id="tmstop">정지</button><button class="chip" id="tmreset">초기화</button></div></section>
+
+<section><h2>랠리 카운터 <small style="font-weight:400;color:var(--mute)">(부가 기능 · 경기 중 랠리 길이 기록)</small></h2>
+<p id="raldisp" style="font-size:2.2rem;font-weight:700;margin:6px 0">0타</p>
+<div class="chips"><button class="chip" id="ralhit">+1 (셔틀 주고받기)</button><button class="chip" id="ralend">랠리 종료</button><button class="chip" id="ralclear">전체 초기화</button></div>
+<p id="ralstat" class="note" style="margin-top:8px"></p></section>
+
+<section><h2>용어 사전 <small style="font-weight:400;color:var(--mute)">(부가 기능)</small></h2>
+<input id="tq" type="search" placeholder="용어 검색 (예: 헤어핀, 드라이브)" aria-label="용어 검색"><div id="tlist"></div></section>
+
+<section><h2>음성/텍스트 메모 <small style="font-weight:400;color:var(--mute)">(부가 기능 · 세트 사이 빠른 기록)</small></h2>
+<div class="chips"><button class="chip" id="vbtn">🎤 음성으로 메모</button></div>
+<p id="voicemsg" class="note" style="margin:6px 0"></p>
+<div class="chips"><input id="mtxt" placeholder="직접 입력도 가능합니다" style="flex:1;font:inherit;padding:7px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)"><button class="chip" id="madd">추가</button></div>
+<div id="memolist" style="margin-top:8px"></div></section>
+
+<section><h2>코트 조건 사진 기록 <small style="font-weight:400;color:var(--mute)">(부가 기능 · 같은 장소 재방문 시 참고)</small></h2>
+<input id="pfile" type="file" accept="image/*" capture="environment">
+<div id="photolist" style="margin-top:8px"></div>
+<p class="note">사진은 작게 축소되어 이 브라우저에만 저장됩니다. 용량이 크면 저장이 안 될 수 있습니다.</p></section>
+
+<section><h2>경기 후 회고 리포트 <small style="font-weight:400;color:var(--mute)">(부가 기능 · 기록을 모아 요약)</small></h2>
+<div class="chips no-print"><input id="rpOpp" placeholder="상대 이름(선택)" style="font:inherit;padding:7px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)"><button class="chip" id="rpGen">리포트 생성</button><button class="chip" id="rpPdf">🖨 리포트 인쇄/PDF</button></div>
+<div id="report" style="margin-top:10px"></div></section>
+
+<section><h2>파트너와 공유하기 <small style="font-weight:400;color:var(--mute)">(부가 기능 · 실시간 공유 서버는 없어 코드로 전달)</small></h2>
+<div class="chips"><button class="chip" id="shgen">현재 선택 공유 코드 만들기</button><button class="chip" id="shload">붙여넣은 코드 불러오기</button></div>
+<textarea id="shcode" rows="3" placeholder="코드가 여기 생성됩니다. 받은 코드는 여기 붙여넣고 '코드 불러오기'를 누르세요." style="width:100%;margin-top:8px;font:inherit;font-size:.78rem;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)"></textarea></section>
 
 <section><h2>경기 종류</h2>
 <div class="seg" id="mode"><button data-m="s" aria-pressed="true">단식</button><button data-m="d" aria-pressed="false">복식</button></div></section>
@@ -75,6 +118,15 @@ details{border-top:1px solid var(--line);padding:8px 0}summary{cursor:pointer;fo
 <div class="chips"><select id="cp1" style="font:inherit;padding:7px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)"></select><select id="cp2" style="font:inherit;padding:7px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)"></select><button class="chip" id="cpbtn">비교하기</button></div>
 <div id="cpout" style="margin-top:8px"></div>
 </section>
+
+<section><h2>경기 시뮬레이션 <small style="font-weight:400;color:var(--mute)">(부가 기능 · 위에서 상대 스타일을 먼저 선택하세요)</small></h2>
+<p class="note" style="margin:0 0 8px">21점 3세트, 200회 반복 몬테카를로 방식으로 예상 승률을 계산합니다.</p>
+<div class="chips" id="skill"></div>
+<button class="chip" id="simbtn" style="margin-top:10px">경기 시뮬레이션 실행</button>
+<div id="simout" style="margin-top:10px"></div></section>
+
+<section><h2>전적 통계 대시보드 <small style="font-weight:400;color:var(--mute)">(부가 기능 · 저장된 모든 기록 집계)</small></h2>
+<div id="stats"></div></section>
 
 <section><h2>경기 기록으로 학습시키기</h2>
 <p class="note" style="margin:0 0 10px">위에서 상대 스타일을 고른 뒤, 실제로 쓴 전술이 통했는지 기록하세요. 같은 유형의 추천 확률이 내 기록에 맞게 조정됩니다. 기록은 이 브라우저에만 저장됩니다.</p>
@@ -188,7 +240,7 @@ let REC={};try{REC=JSON.parse(localStorage.getItem('rec')||'{}')}catch(e){}
 const saveRec=()=>{try{localStorage.setItem('rec',JSON.stringify(REC))}catch(e){}};
 const ctx=()=>st.m+'|'+[...st.a,...(st.m==='d'?st.b:[])].sort().join(',');
 const recN=()=>Object.values(REC[ctx()]||{}).reduce((a,r)=>a+r[1],0);
-function record(ok){const c=ctx(),k=$('#rt').value;REC[c]=REC[c]||{};const r=REC[c][k]||[0,0];r[1]++;if(ok)r[0]++;REC[c][k]=r;saveRec();render()}
+function record(ok){const c=ctx(),k=$('#rt').value;REC[c]=REC[c]||{};const r=REC[c][k]||[0,0];r[1]++;if(ok)r[0]++;REC[c][k]=r;saveRec();buildStats();render()}
 function calc(m,ka,kb,kk,vs){const sc={};T.forEach(t=>sc[t[0]]=0);
  const NEG=/피하|금지|말고|않|대신|줄이|회피|우회|보다/;
  const add=(x,w)=>{const tk=x.split(/[\s·,.;]+/);tk.forEach((s,i)=>{const ng=[0,1,2].some(j=>tk[i+j]&&NEG.test(tk[i+j]));T.forEach(t=>{if(t[2].test(s))sc[t[0]]+=(ng?-.7:1)*w})})};
@@ -201,6 +253,47 @@ function calc(m,ka,kb,kk,vs){const sc={};T.forEach(t=>sc[t[0]]=0);
  st.mine.forEach(k=>sc[k]+=1.5);if(st.sit)for(const z in SIT[st.sit].a)sc[z]+=SIT[st.sit].a[z];
  const mx=Math.max(...Object.values(sc)),e=T.map(t=>Math.exp((sc[t[0]]-mx)*.45)),sum=e.reduce((a,b)=>a+b,0);
  return T.map((t,i)=>[t[1],e[i]/sum*100,t[0]]).sort((a,b)=>b[1]-a[1])}
+const SKL=[[-3,'상대가 많이 강함'],[-2,'상대가 약간 강함'],[-1,'상대가 조금 강함'],[0,'비슷함'],[1,'내가 조금 강함'],[2,'내가 약간 강함'],[3,'내가 많이 강함']];
+function buildTerms(){const q=($('#tq').value||'').trim(),el=$('#tlist');
+ el.innerHTML=TERMS.filter(x=>!q||x[0].includes(q)).map(x=>'<p style="margin:6px 0"><b>'+x[0]+'</b> — '+x[1]+'</p>').join('')||'<p class="note">일치하는 용어가 없습니다.</p>'}
+function ralRender(){$('#raldisp').textContent=ralCur+'타';
+ if(RAL.length){const avg=(RAL.reduce((a,b)=>a+b,0)/RAL.length).toFixed(1),mx=Math.max(...RAL);
+  $('#ralstat').textContent='지난 랠리 '+RAL.length+'개 · 평균 '+avg+'타 · 최장 '+mx+'타'}else $('#ralstat').textContent=''}
+function buildStats(){const T2={};for(const c in REC)for(const k in REC[c]){const r=REC[c][k],a=T2[k]||(T2[k]=[0,0]);a[0]+=r[0];a[1]+=r[1]}
+ const rows=Object.keys(T2).map(k=>[T[T.findIndex(t=>t[0]===k)]?.[1]||k,T2[k][0],T2[k][1]]).filter(r=>r[2]>0).sort((a,b)=>b[1]/b[2]-a[1]/a[2]);
+ $('#stats').innerHTML=rows.length?rows.map(r=>'<div class="bar"><span>'+r[0]+'</span><i style="width:'+Math.max(2,r[1]/r[2]*60)+'%"></i><b>'+r[1]+'/'+r[2]+' ('+(r[1]/r[2]*100).toFixed(0)+'%)</b></div>').join('')+'<p class="note">모든 상대 유형을 합산한 전술별 성공률입니다. "경기 기록으로 학습시키기"에서 기록할수록 쌓입니다.</p>':'<p class="note">아직 기록이 없습니다. 아래에서 전술 성공 여부를 기록해보세요.</p>'}
+function buildSkill(){const el=$('#skill');el.innerHTML='';SKL.forEach(([v,l])=>{const b=document.createElement('button');b.className='chip';b.textContent=l;b.setAttribute('aria-pressed',st.skill===v);b.onclick=()=>{st.skill=v;buildSkill()};el.appendChild(b)})}
+function simSet(p){let a=0,b=0;while(!((a>=21||b>=21)&&Math.abs(a-b)>=2)&&!(a>=30||b>=30)){Math.random()<p?a++:b++}return[a,b]}
+function simMatch(p){const sets=[];let aw=0,bw=0;while(aw<2&&bw<2){const s=simSet(p);sets.push(s);s[0]>s[1]?aw++:bw++}return{sets,aw,bw}}
+const TERMS=P('클리어:셔틀을 상대 코트 뒤쪽 깊숙이 높게 보내는 기본 샷;스매시:네트 위에서 아래로 강하게 내리꽂는 공격 샷;드롭:스매시처럼 보이다가 네트 앞에 살짝 떨어뜨리는 샷;헤어핀:네트 앞에서 네트를 살짝 넘겨 상대 네트 앞에 떨어뜨리는 샷;드라이브:네트 높이에서 빠르고 평평하게 주고받는 샷;푸시:네트 앞 높은 공을 짧고 빠르게 눌러 넣는 샷;플릭:짧은 서브처럼 보이다가 순간적으로 길게 보내는 손목 샷;로브:수비 시 상대 스매시를 받아 다시 높이 띄우는 샷;라운드 더 헤드:백핸드 코너의 공을 포핸드 자세로 돌아서 치는 동작;하이클리어:아주 높고 깊게 보내는 클리어;드리븐 클리어:높이는 낮지만 빠르고 깊게 보내는 클리어;헤어핀 대결:네트 앞에서 서로 헤어핀을 주고받는 상황;스플릿 스텝:상대가 치기 직전 가볍게 뛰며 반응 준비를 하는 스텝;사이드바이사이드:복식에서 두 선수가 좌우로 나란히 서는 수비 대형;톱앤백:복식에서 한 명은 앞, 한 명은 뒤에 서는 공격 대형;리시브:서브를 받아 넘기는 첫 동작;폴트:서브나 플레이 규칙 위반으로 실점하는 상황;레트:판정 불가 등으로 다시 치는 상황(현재 규정에서는 드묾)');
+let MEMO=[],PHOTO=[];
+try{MEMO=JSON.parse(localStorage.getItem('memo')||'[]')}catch(e){}
+try{PHOTO=JSON.parse(localStorage.getItem('photo')||'[]')}catch(e){}
+const saveMemo=()=>{try{localStorage.setItem('memo',JSON.stringify(MEMO))}catch(e){}};
+const savePhoto=()=>{try{localStorage.setItem('photo',JSON.stringify(PHOTO))}catch(e){}};
+function buildMemo(){$('#memolist').innerHTML=MEMO.length?MEMO.slice().reverse().map((m,ri)=>{const i=MEMO.length-1-ri;return'<div class="who"><small style="color:var(--mute)">'+m.t+'</small><br>'+m.x+' <button class="chip" data-mi="'+i+'" style="padding:2px 8px;font-size:.75rem">삭제</button></div>'}).join(''):'<p class="note">아직 메모가 없습니다.</p>';
+ $('#memolist').querySelectorAll('[data-mi]').forEach(b=>b.onclick=()=>{MEMO.splice(+b.dataset.mi,1);saveMemo();buildMemo()})}
+function addMemo(txt){if(!txt||!txt.trim())return;MEMO.push({t:new Date().toLocaleString('ko-KR'),x:txt.trim()});saveMemo();buildMemo()}
+function startVoice(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+ if(!SR){$('#voicemsg').textContent='이 브라우저는 음성 인식을 지원하지 않습니다. 아래 글상자에 직접 입력하세요.';return}
+ const r=new SR();r.lang='ko-KR';r.onresult=e=>addMemo(e.results[0][0].transcript);r.onerror=()=>{$('#voicemsg').textContent='음성 인식에 실패했습니다. 마이크 권한을 확인하거나 직접 입력하세요.'};
+ $('#voicemsg').textContent='듣는 중... 말씀하세요.';r.start()}
+function resizeImg(file,cb){const img=new Image(),fr=new FileReader();fr.onload=()=>{img.onload=()=>{const c=document.createElement('canvas'),w=Math.min(360,img.width),h=img.height*(w/img.width);c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);cb(c.toDataURL('image/jpeg',.6))};img.src=fr.result};fr.readAsDataURL(file)}
+function buildPhoto(){$('#photolist').innerHTML=PHOTO.length?PHOTO.map((p,i)=>'<div style="display:inline-block;margin:6px;text-align:center"><img src="'+p.d+'" style="width:110px;border-radius:8px;display:block"><small>'+p.n+'</small><br><button class="chip" data-pi="'+i+'" style="padding:2px 8px;font-size:.75rem;margin-top:2px">삭제</button></div>').join(''):'<p class="note">아직 저장된 사진이 없습니다.</p>';
+ $('#photolist').querySelectorAll('[data-pi]').forEach(b=>b.onclick=()=>{PHOTO.splice(+b.dataset.pi,1);savePhoto();buildPhoto()})}
+function b64(o){return btoa(unescape(encodeURIComponent(JSON.stringify(o))))}
+function unb64(s){return JSON.parse(decodeURIComponent(escape(atob(s))))}
+let RAL=[],ralCur=0;
+let tmLeft=0,tmIv=null;
+function tmRender(){const m=Math.floor(Math.max(0,tmLeft)/60),s=Math.max(0,tmLeft)%60;$('#tmdisp').textContent=(m+'').padStart(2,'0')+':'+(s+'').padStart(2,'0');$('#tmdisp').style.color=tmLeft<=10&&tmLeft>0?'var(--warn)':'var(--ink)'}
+function tmStart(){if(tmIv||tmLeft<=0)return;tmIv=setInterval(()=>{tmLeft--;tmRender();if(tmLeft<=0){clearInterval(tmIv);tmIv=null;$('#tmdisp').textContent='시간 종료!';$('#tmdisp').style.color='var(--warn)'}},1000)}
+let fsz=100;
+function runSim(){const last=window.__last;if(!last||!last.r){$('#simout').innerHTML='<p class="note">먼저 위에서 상대 스타일이나 키워드를 선택하세요.</p>';return}
+ const top=last.r[0][1];let p=.5+st.skill*.05+(top-10)/100*.3;p=Math.max(.25,Math.min(.75,p));
+ const sample=simMatch(p);const N=200;let win=0;for(let i=0;i<N;i++)if(simMatch(p).aw===2)win++;const wp=(win/N*100).toFixed(1);
+ $('#simout').innerHTML='<p style="font-weight:700;font-size:1.05rem">예상 승률: '+wp+'% <span style="font-weight:400;font-size:.85rem;color:var(--mute)">('+N+'회 시뮬레이션 평균)</span></p>'+
+ '<p>예시 경기 결과: '+sample.sets.map(s=>s[0]+'-'+s[1]).join(', ')+' → '+(sample.aw===2?'승리':'패배')+'</p>'+
+ '<p class="note">랠리당 승리 확률 '+(p*100).toFixed(1)+'%를 기준으로 한 단순 몬테카를로 모델입니다. 실력 차이 입력값과 위에서 계산된 전술 추천도를 반영했지만, 실제 컨디션·심리·상대 대응은 반영하지 않습니다.</p>'}
 function probHtml(m,ka,kb,kk,vs){const rc=recN(),r=calc(m,ka,kb,kk,vs),n=ka.length+kb.length+kk.length+vs.length+st.mine.size+(st.sit?1:0)+Math.min(rc,10),lv=n<3?'낮음':n<7?'보통':'높음';
  window.__last={m,ka,kb,kk,vs,r};
  return '<section><h2>전술 추천 확률</h2>'+r.map(x=>'<div class="bar"><span>'+x[0]+'</span><i style="width:'+Math.max(2,x[1]*2.2)+'%"></i><b>'+x[1].toFixed(1)+'%</b></div>').join('')+patHtml(r)+'<p class="note">입력 정보 '+n+'개 · 이 상대 유형 기록 '+rc+'경기 반영 · 추정 신뢰도 '+lv+'. 기본값은 규칙 기반 추정이며, 기록이 쌓일수록 내 경기 데이터에 맞게 조정됩니다.</p></section>'}
@@ -240,7 +333,7 @@ function copySummary(){const{m,ka,kb,kk,vs,r}=window.__last||{};if(!r)return;con
  let t='[배드민턴 공략 요약]\n형식: '+(m==='s'?'단식':'복식')+'\n상대 스타일: '+L(ka.map(k=>STY[k].n))+(m==='d'?' / '+L(kb.map(k=>STY[k].n)):'')+'\n세부 키워드: '+L(kk)+'\n경기장: '+L(vs.map(k=>VEN[k].n))+'\n추천 전술 1위: '+r[0][0]+' ('+r[0][1].toFixed(1)+'%), 2위: '+r[1][0]+' ('+r[1][1].toFixed(1)+'%)\n';
  navigator.clipboard?.writeText(t).catch(()=>{});const io=$('#io');if(io){io.value=t;io.select()}}
 function buildSit(){const el=$('#sit');el.innerHTML='';for(const k in SIT){const b=document.createElement('button');b.className='chip';b.textContent=SIT[k].n;b.setAttribute('aria-pressed',st.sit===k);b.onclick=()=>{st.sit=st.sit===k?'':k;buildSit();render()};el.appendChild(b)}}
-const st={m:'s',a:new Set(),b:new Set(),v:new Set(),k:new Set(),k2:new Set(),kt:'a',g:{},mine:new Set(),sit:''};
+const st={m:'s',a:new Set(),b:new Set(),v:new Set(),k:new Set(),k2:new Set(),kt:'a',g:{},mine:new Set(),sit:'',skill:0};
 const $=s=>document.querySelector(s);
 function chips(el,obj,set,cb){el.innerHTML='';for(const k in obj){const b=document.createElement('button');b.className='chip';b.textContent=obj[k].n;b.setAttribute('aria-pressed',set.has(k));b.onclick=()=>{set.has(k)?set.delete(k):set.add(k);b.setAttribute('aria-pressed',set.has(k));cb()};el.appendChild(b)}}
 function buildOpps(){const o=$('#opps');o.innerHTML='';const list=st.m==='s'?[['상대 선수','a']]:[['상대 A (전위 또는 왼쪽)','a'],['상대 B (후위 또는 오른쪽)','b']];
@@ -273,12 +366,27 @@ function render(){const out=$('#out'),m=st.m;$('#cases').textContent=casesTxt();
  out.innerHTML=h}
 document.querySelectorAll('#mode button').forEach(b=>b.onclick=()=>{st.m=b.dataset.m;document.querySelectorAll('#mode button').forEach(x=>x.setAttribute('aria-pressed',x===b));buildOpps();buildGrp();$('#kt').style.display=st.m==='d'?'inline-flex':'none';buildKw();render()});
 document.querySelectorAll('#kt button').forEach(b=>b.onclick=()=>{st.kt=b.dataset.t;document.querySelectorAll('#kt button').forEach(x=>x.setAttribute('aria-pressed',x===b));buildKw()});
-chips($('#venue'),VEN,st.v,render);chips($('#mine'),Object.fromEntries(T.map(t=>[t[0],{n:t[1]}])),st.mine,render);buildSit();$('#rt').innerHTML=T.map(t=>'<option value="'+t[0]+'">'+t[1]+'</option>').join('');$('#ok').onclick=()=>record(1);$('#ng').onclick=()=>record(0);$('#rst').onclick=()=>{REC={};saveRec();render()};$('#exp').onclick=()=>{const t=$('#io');t.value=JSON.stringify(REC);t.select()};$('#imp').onclick=()=>{try{const o=JSON.parse($('#io').value);if(o&&typeof o==='object'){REC=o;saveRec();render()}}catch(e){$('#io').value='형식이 올바르지 않습니다. 내보내기로 만든 텍스트를 그대로 붙여넣으세요.'}};document.body.addEventListener('click',e=>{if(e.target&&e.target.id==='csum')copySummary()});
+chips($('#venue'),VEN,st.v,render);chips($('#mine'),Object.fromEntries(T.map(t=>[t[0],{n:t[1]}])),st.mine,render);buildSit();$('#rt').innerHTML=T.map(t=>'<option value="'+t[0]+'">'+t[1]+'</option>').join('');$('#ok').onclick=()=>record(1);$('#ng').onclick=()=>record(0);$('#rst').onclick=()=>{REC={};saveRec();buildStats();render()};$('#exp').onclick=()=>{const t=$('#io');t.value=JSON.stringify(REC);t.select()};$('#imp').onclick=()=>{try{const o=JSON.parse($('#io').value);if(o&&typeof o==='object'){REC=o;saveRec();buildStats();render()}}catch(e){$('#io').value='형식이 올바르지 않습니다. 내보내기로 만든 텍스트를 그대로 붙여넣으세요.'}};document.body.addEventListener('click',e=>{if(e.target&&e.target.id==='csum')copySummary()});
+buildStats();
+buildTerms();$('#tq').oninput=buildTerms;
+$('#ralhit').onclick=()=>{ralCur++;ralRender()};$('#ralend').onclick=()=>{if(ralCur>0){RAL.push(ralCur);ralCur=0;ralRender()}};$('#ralclear').onclick=()=>{RAL=[];ralCur=0;ralRender()};ralRender();
+buildMemo();$('#vbtn').onclick=startVoice;$('#madd').onclick=()=>{addMemo($('#mtxt').value);$('#mtxt').value=''};
+buildPhoto();$('#pfile').onchange=e=>{const f=e.target.files[0];if(!f)return;resizeImg(f,d=>{PHOTO.push({n:new Date().toLocaleDateString('ko-KR'),d});savePhoto();buildPhoto()});e.target.value=''};
+$('#shgen').onclick=()=>{$('#shcode').value=b64(snap())};
+$('#shload').onclick=()=>{try{const s=unb64($('#shcode').value.trim());st.m=s.m;st.a=new Set(s.a);st.b=new Set(s.b);st.v=new Set(s.v);st.k=new Set(s.k);st.k2=new Set(s.k2);st.mine=new Set(s.mine);
+ document.querySelectorAll('#mode button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.m===st.m));$('#kt').style.display=st.m==='d'?'inline-flex':'none';
+ buildOpps();buildGrp();chips($('#venue'),VEN,st.v,render);chips($('#mine'),Object.fromEntries(T.map(t=>[t[0],{n:t[1]}])),st.mine,render);buildKw();render()}catch(e){alert('코드를 읽을 수 없습니다. 정확히 복사했는지 확인하세요.')}};
 $('#ms').oninput=syncScore;$('#os').oninput=syncScore;
 buildChk();
 buildPlist();
 $('#psave').onclick=()=>{const n=($('#pn').value||'').trim();if(!n)return;const P=loadProfiles();P[n]=snap();localStorage.setItem('profiles',JSON.stringify(P));$('#pn').value='';buildPlist();buildCompare()};
 buildCompare();$('#cpbtn').onclick=compareProfiles;
+buildSkill();$('#simbtn').onclick=runSim;
+document.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{tmLeft=+b.dataset.s;tmRender()});
+$('#tmstart').onclick=tmStart;$('#tmstop').onclick=()=>{clearInterval(tmIv);tmIv=null};$('#tmreset').onclick=()=>{clearInterval(tmIv);tmIv=null;tmLeft=0;tmRender()};tmRender();
+$('#pdfbtn').onclick=()=>window.print();
+$('#fsp').onclick=()=>{fsz=Math.min(140,fsz+10);document.documentElement.style.fontSize=fsz+'%'};
+$('#fsm').onclick=()=>{fsz=Math.max(80,fsz-10);document.documentElement.style.fontSize=fsz+'%'};
 buildOpps();buildGrp();buildKw();$('#q').oninput=buildKw;render();
 </script>
 </body>
