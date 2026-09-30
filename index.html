@@ -111,6 +111,10 @@ details{border-top:1px solid var(--line);padding:8px 0}summary{cursor:pointer;fo
 <section><h2>경기장 조건 <small style="font-weight:400;color:var(--mute)">(해당되는 것 모두)</small></h2>
 <div class="chips" id="venue"></div></section>
 
+<section><h2>즐겨찾기 조합 <small style="font-weight:400;color:var(--mute)">(부가 기능 · 자주 쓰는 상대 조합 한 번에 불러오기)</small></h2>
+<div id="favlist"></div>
+<button class="chip" id="favadd" style="margin-top:8px">⭐ 현재 조합 즐겨찾기 추가</button></section>
+
 <section><h2>상대 프로필 저장 <small style="font-weight:400;color:var(--mute)">(부가 기능 · 다음에 같은 상대 만날 때 재사용)</small></h2>
 <div class="chips"><input id="pn" placeholder="상대 이름 (예: 김철수)" style="font:inherit;padding:7px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)"><button class="chip" id="psave">현재 선택 저장</button></div>
 <div class="chips" id="plist" style="margin-top:10px"></div>
@@ -125,8 +129,16 @@ details{border-top:1px solid var(--line);padding:8px 0}summary{cursor:pointer;fo
 <button class="chip" id="simbtn" style="margin-top:10px">경기 시뮬레이션 실행</button>
 <div id="simout" style="margin-top:10px"></div></section>
 
+<section><h2>경기 후 회고 리포트 <small style="font-weight:400;color:var(--mute)">(부가 기능 · 기록·메모·스코어 종합)</small></h2>
+<div class="chips"><button class="chip" id="repgen">리포트 생성</button><button class="chip" id="repsave">저장</button></div>
+<pre id="repout" style="white-space:pre-wrap;font:inherit;font-size:.85rem;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;margin-top:8px;min-height:20px"></pre>
+<h3 style="font-size:.95rem;margin:12px 0 4px">저장된 리포트</h3><div id="replist"></div></section>
+
 <section><h2>전적 통계 대시보드 <small style="font-weight:400;color:var(--mute)">(부가 기능 · 저장된 모든 기록 집계)</small></h2>
 <div id="stats"></div></section>
+
+<section><h2>전술 성공률 뱃지 <small style="font-weight:400;color:var(--mute)">(부가 기능 · 전술별 성공 횟수 등급)</small></h2>
+<div id="badges"></div></section>
 
 <section><h2>경기 기록으로 학습시키기</h2>
 <p class="note" style="margin:0 0 10px">위에서 상대 스타일을 고른 뒤, 실제로 쓴 전술이 통했는지 기록하세요. 같은 유형의 추천 확률이 내 기록에 맞게 조정됩니다. 기록은 이 브라우저에만 저장됩니다.</p>
@@ -240,7 +252,7 @@ let REC={};try{REC=JSON.parse(localStorage.getItem('rec')||'{}')}catch(e){}
 const saveRec=()=>{try{localStorage.setItem('rec',JSON.stringify(REC))}catch(e){}};
 const ctx=()=>st.m+'|'+[...st.a,...(st.m==='d'?st.b:[])].sort().join(',');
 const recN=()=>Object.values(REC[ctx()]||{}).reduce((a,r)=>a+r[1],0);
-function record(ok){const c=ctx(),k=$('#rt').value;REC[c]=REC[c]||{};const r=REC[c][k]||[0,0];r[1]++;if(ok)r[0]++;REC[c][k]=r;saveRec();buildStats();render()}
+function record(ok){const c=ctx(),k=$('#rt').value;REC[c]=REC[c]||{};const r=REC[c][k]||[0,0];r[1]++;if(ok)r[0]++;REC[c][k]=r;saveRec();buildStats();buildBadges();render()}
 function calc(m,ka,kb,kk,vs){const sc={};T.forEach(t=>sc[t[0]]=0);
  const NEG=/피하|금지|말고|않|대신|줄이|회피|우회|보다/;
  const add=(x,w)=>{const tk=x.split(/[\s·,.;]+/);tk.forEach((s,i)=>{const ng=[0,1,2].some(j=>tk[i+j]&&NEG.test(tk[i+j]));T.forEach(t=>{if(t[2].test(s))sc[t[0]]+=(ng?-.7:1)*w})})};
@@ -281,8 +293,45 @@ function startVoice(){const SR=window.SpeechRecognition||window.webkitSpeechReco
 function resizeImg(file,cb){const img=new Image(),fr=new FileReader();fr.onload=()=>{img.onload=()=>{const c=document.createElement('canvas'),w=Math.min(360,img.width),h=img.height*(w/img.width);c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);cb(c.toDataURL('image/jpeg',.6))};img.src=fr.result};fr.readAsDataURL(file)}
 function buildPhoto(){$('#photolist').innerHTML=PHOTO.length?PHOTO.map((p,i)=>'<div style="display:inline-block;margin:6px;text-align:center"><img src="'+p.d+'" style="width:110px;border-radius:8px;display:block"><small>'+p.n+'</small><br><button class="chip" data-pi="'+i+'" style="padding:2px 8px;font-size:.75rem;margin-top:2px">삭제</button></div>').join(''):'<p class="note">아직 저장된 사진이 없습니다.</p>';
  $('#photolist').querySelectorAll('[data-pi]').forEach(b=>b.onclick=()=>{PHOTO.splice(+b.dataset.pi,1);savePhoto();buildPhoto()})}
+function applySnap(s){st.m=s.m;st.a=new Set(s.a);st.b=new Set(s.b);st.v=new Set(s.v);st.k=new Set(s.k);st.k2=new Set(s.k2);st.mine=new Set(s.mine);
+ document.querySelectorAll('#mode button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.m===st.m));$('#kt').style.display=st.m==='d'?'inline-flex':'none';
+ buildOpps();buildGrp();chips($('#venue'),VEN,st.v,render);chips($('#mine'),Object.fromEntries(T.map(t=>[t[0],{n:t[1]}])),st.mine,render);buildKw();render()}
+function loadFavs(){try{return JSON.parse(localStorage.getItem('favs')||'[]')}catch(e){return[]}}
+function saveFavs(f){try{localStorage.setItem('favs',JSON.stringify(f))}catch(e){}}
+function addFav(){const s=snap();if(!s.a.length&&!s.b.length){alert('먼저 위에서 상대 스타일을 하나 이상 선택하세요.');return}
+ const label=[...s.a,...s.b].map(k=>STY[k]?STY[k].n:k).slice(0,2).join('+');const f=loadFavs();f.push({label,s});saveFavs(f);buildFavs()}
+function buildFavs(){const f=loadFavs(),el=$('#favlist');el.innerHTML=f.length?'':'<p class="note">즐겨찾기가 없습니다. 상대 스타일을 고른 뒤 아래 버튼으로 추가하세요.</p>';
+ f.forEach((x,i)=>{const w=document.createElement('span');w.style.cssText='display:inline-flex;gap:4px;margin:3px';
+  const lb=document.createElement('button');lb.className='chip';lb.textContent='⭐ '+x.label;lb.onclick=()=>applySnap(x.s);
+  const db=document.createElement('button');db.className='chip';db.textContent='×';db.style.cssText='padding:2px 9px;font-size:.75rem';db.onclick=()=>{const f2=loadFavs();f2.splice(i,1);saveFavs(f2);buildFavs()};
+  w.appendChild(lb);w.appendChild(db);el.appendChild(w)})}
+const BADGE_T=[[30,'🥇 골드'],[15,'🥈 실버'],[5,'🥉 브론즈']];
+function buildBadges(){const T2={};for(const c in REC)for(const k in REC[c]){const r=REC[c][k],a=T2[k]||(T2[k]=[0,0]);a[0]+=r[0];a[1]+=r[1]}
+ const rows=Object.keys(T2).map(k=>{const succ=T2[k][0],b=BADGE_T.find(x=>succ>=x[0]),nm=(T.find(t=>t[0]===k)||[,k])[1];return{nm,succ,b}}).filter(r=>r.succ>0).sort((a,b)=>b.succ-a.succ);
+ $('#badges').innerHTML=rows.length?rows.map(r=>{const next=r.b?BADGE_T.filter(x=>x[0]>r.b[0]).pop():BADGE_T[BADGE_T.length-1];
+  return'<div class="who"><b>'+(r.b?r.b[1]:'미획득')+'</b> '+r.nm+' — 성공 '+r.succ+'회'+(next&&next[0]!==r.b?.[0]?' (다음 등급까지 '+(next[0]-r.succ)+'회)':'')+'</div>'}).join(''):'<p class="note">전술 성공 기록이 쌓이면 뱃지가 표시됩니다.</p>'}
 function b64(o){return btoa(unescape(encodeURIComponent(JSON.stringify(o))))}
 function unb64(s){return JSON.parse(decodeURIComponent(escape(atob(s))))}
+let REP=[];try{REP=JSON.parse(localStorage.getItem('rep')||'[]')}catch(e){}
+const saveRep=()=>{try{localStorage.setItem('rep',JSON.stringify(REP))}catch(e){}};
+function scoreAdd(side){const id=side==='a'?'#ms':'#os';$(id).value=(+$(id).value||0)+1;st.server=side;syncScore()}
+function scoreSub(side){const id=side==='a'?'#ms':'#os';$(id).value=Math.max(0,(+$(id).value||0)-1);syncScore()}
+function sbSwapServe(){st.server=st.server==='a'?'b':'a';sbRender()}
+function sbResetScore(){$('#ms').value=0;$('#os').value=0;st.server='';syncScore()}
+function sbRender(){const a=+$('#ms').value||0,b=+$('#os').value||0;$('#sbScoreA').textContent=a;$('#sbScoreB').textContent=b;
+ $('#sbServeA').style.visibility=st.server==='a'?'visible':'hidden';$('#sbServeB').textContent=st.server==='b'?'🏸':'';
+ $('#sbmsg').textContent=st.sit&&SIT[st.sit]?'현재 상황 자동 반영: '+SIT[st.sit].n:''}
+function genReport(){const last=window.__last;const a=+$('#ms').value||0,b=+$('#os').value||0;
+ const stName=last?[...last.ka,...last.kb].map(k=>STY[k].n).join(', ')||'미선택':'미선택';
+ const rc=REC[ctx()]||{};const top=Object.keys(rc).map(k=>[k,rc[k]]).filter(x=>x[1][1]>0).sort((x,y)=>y[1][0]/y[1][1]-x[1][0]/x[1][1])[0];
+ const topName=top?(T.find(t=>t[0]===top[0])||[,top[0]])[1]+' ('+top[1][0]+'/'+top[1][1]+')':'기록 없음';
+ const memos=MEMO.slice(-3).map(m=>'- '+m.x).join('\n')||'없음';
+ const ralTxt=RAL.length?'평균 '+(RAL.reduce((x,y)=>x+y,0)/RAL.length).toFixed(1)+'타, 최장 '+Math.max(...RAL)+'타':'기록 없음';
+ const txt='[경기 회고 리포트]\n날짜: '+new Date().toLocaleString('ko-KR')+'\n상대 스타일: '+stName+'\n현재 스코어: '+a+' - '+b+'\n랠리 통계: '+ralTxt+'\n가장 성공률 높은 전술: '+topName+'\n최근 메모:\n'+memos;
+ $('#repout').textContent=txt;window.__repTxt=txt}
+function saveReport(){if(!window.__repTxt)return;REP.push({t:new Date().toLocaleString('ko-KR'),x:window.__repTxt});saveRep();buildRepList()}
+function buildRepList(){$('#replist').innerHTML=REP.length?REP.slice().reverse().map((r,ri)=>{const i=REP.length-1-ri;return'<details style="margin:6px 0"><summary>'+r.t+'</summary><pre style="white-space:pre-wrap;font:inherit;font-size:.85rem">'+r.x+'</pre><button class="chip" data-ri="'+i+'" style="padding:2px 8px;font-size:.75rem">삭제</button></details>'}).join(''):'<p class="note">저장된 리포트가 없습니다.</p>';
+ $('#replist').querySelectorAll('[data-ri]').forEach(b=>b.onclick=()=>{REP.splice(+b.dataset.ri,1);saveRep();buildRepList()})}
 let RAL=[],ralCur=0;
 let tmLeft=0,tmIv=null;
 function tmRender(){const m=Math.floor(Math.max(0,tmLeft)/60),s=Math.max(0,tmLeft)%60;$('#tmdisp').textContent=(m+'').padStart(2,'0')+':'+(s+'').padStart(2,'0');$('#tmdisp').style.color=tmLeft<=10&&tmLeft>0?'var(--warn)':'var(--ink)'}
@@ -302,14 +351,12 @@ let chkState=new Array(CHK.length).fill(false);
 function buildChk(){$('#chk').innerHTML=CHK.map((t,i)=>'<li style="padding:5px 0"><label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer"><input type="checkbox" '+(chkState[i]?'checked':'')+' data-i="'+i+'" style="margin-top:3px"><span'+(chkState[i]?' style="opacity:.55;text-decoration:line-through"':'')+'>'+t+'</span></label></li>').join('');
  $('#chk').querySelectorAll('input').forEach(c=>c.onchange=()=>{chkState[c.dataset.i]=c.checked;buildChk()})}
 function syncScore(){const my=+$('#ms').value||0,op=+$('#os').value||0,d=my-op;
- st.sit=(my>=20&&op>=20)?'close':d>=3?'lead':d<=-3?'behind':'';buildSit();render()}
+ st.sit=(my>=20&&op>=20)?'close':d>=3?'lead':d<=-3?'behind':'';buildSit();if(typeof sbRender==='function'&&$('#sbScoreA'))sbRender();render()}
 function snap(){return{m:st.m,a:[...st.a],b:[...st.b],v:[...st.v],k:[...st.k],k2:[...st.k2],mine:[...st.mine]}}
 function loadProfiles(){try{return JSON.parse(localStorage.getItem('profiles')||'{}')}catch(e){return{}}}
 function buildPlist(){const P=loadProfiles(),el=$('#plist');el.innerHTML=Object.keys(P).length?'':'<span class="note">저장된 프로필이 없습니다.</span>';
  Object.keys(P).forEach(n=>{const w=document.createElement('span');w.style.cssText='display:inline-flex;gap:4px';
-  const lb=document.createElement('button');lb.className='chip';lb.textContent='📂 '+n;lb.onclick=()=>{const s=P[n];st.m=s.m;st.a=new Set(s.a);st.b=new Set(s.b);st.v=new Set(s.v);st.k=new Set(s.k);st.k2=new Set(s.k2);st.mine=new Set(s.mine);
-   document.querySelectorAll('#mode button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.m===st.m));$('#kt').style.display=st.m==='d'?'inline-flex':'none';
-   buildOpps();chips($('#venue'),VEN,st.v,render);chips($('#mine'),Object.fromEntries(T.map(t=>[t[0],{n:t[1]}])),st.mine,render);buildKw();render()};
+  const lb=document.createElement('button');lb.className='chip';lb.textContent='📂 '+n;lb.onclick=()=>applySnap(P[n]);
   const db=document.createElement('button');db.className='chip';db.textContent='삭제';db.onclick=()=>{const P2=loadProfiles();delete P2[n];localStorage.setItem('profiles',JSON.stringify(P2));buildPlist();buildCompare()};
   w.appendChild(lb);w.appendChild(db);el.appendChild(w)})}
 const DRILL={atk:'멀티셔틀 스매시 리시브 20개 연속 받기',def:'3구 안에 끝내는 공격 패턴 반복 연습(스매시→네트킬)',net:'헤어핀↔드라이브 전환 풋워크 훈련',all:'초반 3랠리 탐색 시뮬레이션(약점 코스 빠르게 찾기)',sta:'5구 이내 결정타 훈련, 짧은 랠리 스퍼트',lef:'반대 방향 크로스 스매시 각도 적응 훈련',bh:'백핸드 코너 연속 클리어 100개',spd:'깊은 하이클리어로 템포 늦추는 훈련',tr:'스플릿 스텝 타이밍 훈련(셔틀 임팩트까지 안 움직이기)',drp:'전위 전진 스텝과 푸시 마무리 훈련',pow:'네트 앞 짧은 공 연속 처리 훈련',slow:'코트 4모서리 왕복 풋워크 훈련'};
@@ -333,7 +380,7 @@ function copySummary(){const{m,ka,kb,kk,vs,r}=window.__last||{};if(!r)return;con
  let t='[배드민턴 공략 요약]\n형식: '+(m==='s'?'단식':'복식')+'\n상대 스타일: '+L(ka.map(k=>STY[k].n))+(m==='d'?' / '+L(kb.map(k=>STY[k].n)):'')+'\n세부 키워드: '+L(kk)+'\n경기장: '+L(vs.map(k=>VEN[k].n))+'\n추천 전술 1위: '+r[0][0]+' ('+r[0][1].toFixed(1)+'%), 2위: '+r[1][0]+' ('+r[1][1].toFixed(1)+'%)\n';
  navigator.clipboard?.writeText(t).catch(()=>{});const io=$('#io');if(io){io.value=t;io.select()}}
 function buildSit(){const el=$('#sit');el.innerHTML='';for(const k in SIT){const b=document.createElement('button');b.className='chip';b.textContent=SIT[k].n;b.setAttribute('aria-pressed',st.sit===k);b.onclick=()=>{st.sit=st.sit===k?'':k;buildSit();render()};el.appendChild(b)}}
-const st={m:'s',a:new Set(),b:new Set(),v:new Set(),k:new Set(),k2:new Set(),kt:'a',g:{},mine:new Set(),sit:'',skill:0};
+const st={m:'s',a:new Set(),b:new Set(),v:new Set(),k:new Set(),k2:new Set(),kt:'a',g:{},mine:new Set(),sit:'',skill:0,server:''};
 const $=s=>document.querySelector(s);
 function chips(el,obj,set,cb){el.innerHTML='';for(const k in obj){const b=document.createElement('button');b.className='chip';b.textContent=obj[k].n;b.setAttribute('aria-pressed',set.has(k));b.onclick=()=>{set.has(k)?set.delete(k):set.add(k);b.setAttribute('aria-pressed',set.has(k));cb()};el.appendChild(b)}}
 function buildOpps(){const o=$('#opps');o.innerHTML='';const list=st.m==='s'?[['상대 선수','a']]:[['상대 A (전위 또는 왼쪽)','a'],['상대 B (후위 또는 오른쪽)','b']];
@@ -366,16 +413,17 @@ function render(){const out=$('#out'),m=st.m;$('#cases').textContent=casesTxt();
  out.innerHTML=h}
 document.querySelectorAll('#mode button').forEach(b=>b.onclick=()=>{st.m=b.dataset.m;document.querySelectorAll('#mode button').forEach(x=>x.setAttribute('aria-pressed',x===b));buildOpps();buildGrp();$('#kt').style.display=st.m==='d'?'inline-flex':'none';buildKw();render()});
 document.querySelectorAll('#kt button').forEach(b=>b.onclick=()=>{st.kt=b.dataset.t;document.querySelectorAll('#kt button').forEach(x=>x.setAttribute('aria-pressed',x===b));buildKw()});
-chips($('#venue'),VEN,st.v,render);chips($('#mine'),Object.fromEntries(T.map(t=>[t[0],{n:t[1]}])),st.mine,render);buildSit();$('#rt').innerHTML=T.map(t=>'<option value="'+t[0]+'">'+t[1]+'</option>').join('');$('#ok').onclick=()=>record(1);$('#ng').onclick=()=>record(0);$('#rst').onclick=()=>{REC={};saveRec();buildStats();render()};$('#exp').onclick=()=>{const t=$('#io');t.value=JSON.stringify(REC);t.select()};$('#imp').onclick=()=>{try{const o=JSON.parse($('#io').value);if(o&&typeof o==='object'){REC=o;saveRec();buildStats();render()}}catch(e){$('#io').value='형식이 올바르지 않습니다. 내보내기로 만든 텍스트를 그대로 붙여넣으세요.'}};document.body.addEventListener('click',e=>{if(e.target&&e.target.id==='csum')copySummary()});
-buildStats();
+chips($('#venue'),VEN,st.v,render);chips($('#mine'),Object.fromEntries(T.map(t=>[t[0],{n:t[1]}])),st.mine,render);buildSit();$('#rt').innerHTML=T.map(t=>'<option value="'+t[0]+'">'+t[1]+'</option>').join('');$('#ok').onclick=()=>record(1);$('#ng').onclick=()=>record(0);$('#rst').onclick=()=>{REC={};saveRec();buildStats();buildBadges();render()};$('#exp').onclick=()=>{const t=$('#io');t.value=JSON.stringify(REC);t.select()};$('#imp').onclick=()=>{try{const o=JSON.parse($('#io').value);if(o&&typeof o==='object'){REC=o;saveRec();buildStats();buildBadges();render()}}catch(e){$('#io').value='형식이 올바르지 않습니다. 내보내기로 만든 텍스트를 그대로 붙여넣으세요.'}};document.body.addEventListener('click',e=>{if(e.target&&e.target.id==='csum')copySummary()});
+buildFavs();$('#favadd').onclick=addFav;
+$('#sbAplus').onclick=()=>scoreAdd('a');$('#sbAminus').onclick=()=>scoreSub('a');$('#sbBplus').onclick=()=>scoreAdd('b');$('#sbBminus').onclick=()=>scoreSub('b');$('#sbSwap').onclick=sbSwapServe;$('#sbReset').onclick=sbResetScore;sbRender();
+buildRepList();$('#repgen').onclick=genReport;$('#repsave').onclick=saveReport;
+buildStats();buildBadges();
 buildTerms();$('#tq').oninput=buildTerms;
 $('#ralhit').onclick=()=>{ralCur++;ralRender()};$('#ralend').onclick=()=>{if(ralCur>0){RAL.push(ralCur);ralCur=0;ralRender()}};$('#ralclear').onclick=()=>{RAL=[];ralCur=0;ralRender()};ralRender();
 buildMemo();$('#vbtn').onclick=startVoice;$('#madd').onclick=()=>{addMemo($('#mtxt').value);$('#mtxt').value=''};
 buildPhoto();$('#pfile').onchange=e=>{const f=e.target.files[0];if(!f)return;resizeImg(f,d=>{PHOTO.push({n:new Date().toLocaleDateString('ko-KR'),d});savePhoto();buildPhoto()});e.target.value=''};
 $('#shgen').onclick=()=>{$('#shcode').value=b64(snap())};
-$('#shload').onclick=()=>{try{const s=unb64($('#shcode').value.trim());st.m=s.m;st.a=new Set(s.a);st.b=new Set(s.b);st.v=new Set(s.v);st.k=new Set(s.k);st.k2=new Set(s.k2);st.mine=new Set(s.mine);
- document.querySelectorAll('#mode button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.m===st.m));$('#kt').style.display=st.m==='d'?'inline-flex':'none';
- buildOpps();buildGrp();chips($('#venue'),VEN,st.v,render);chips($('#mine'),Object.fromEntries(T.map(t=>[t[0],{n:t[1]}])),st.mine,render);buildKw();render()}catch(e){alert('코드를 읽을 수 없습니다. 정확히 복사했는지 확인하세요.')}};
+$('#shload').onclick=()=>{try{applySnap(unb64($('#shcode').value.trim()))}catch(e){alert('코드를 읽을 수 없습니다. 정확히 복사했는지 확인하세요.')}};
 $('#ms').oninput=syncScore;$('#os').oninput=syncScore;
 buildChk();
 buildPlist();
