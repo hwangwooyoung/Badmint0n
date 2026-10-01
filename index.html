@@ -37,13 +37,16 @@ details{border-top:1px solid var(--line);padding:8px 0}summary{cursor:pointer;fo
 .bar span{flex:0 0 150px}.bar i{display:block;height:10px;border-radius:5px;background:var(--court);max-width:60%}.bar b{margin-left:auto;font-variant-numeric:tabular-nums}
 .note{color:var(--mute);font-size:.85rem;margin:10px 0 0}
 .empty{color:var(--mute);text-align:center;padding:26px 8px}
+body.big button.chip,body.big .seg button{padding:14px 22px;font-size:1.08rem}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--court);color:var(--court-ink);padding:9px 18px;border-radius:999px;font-size:.9rem;font-weight:600;opacity:0;transition:opacity .25s;pointer-events:none;z-index:50}
+.toast.show{opacity:1}
 @media print{body *{visibility:hidden}#out,#out *,#report,#report *{visibility:visible}#out{position:absolute;left:0;top:0;width:100%}#report{position:absolute;left:0;top:0;width:100%}h1{visibility:visible;position:absolute;top:-40px}#csum,.no-print{display:none!important}}
 </style>
 </head>
 <body>
 <main>
 <h1>배드민턴 공략 도우미</h1>
-<div class="chips no-print" style="margin-bottom:8px"><button class="chip" id="fsm">가 작게</button><button class="chip" id="fsp">가 크게</button><button class="chip" id="pdfbtn">🖨 인쇄/PDF 저장</button></div>
+<div class="chips no-print" style="margin-bottom:8px"><button class="chip" id="fsm">가 작게</button><button class="chip" id="fsp">가 크게</button><button class="chip" id="pdfbtn">🖨 인쇄/PDF 저장</button><button class="chip" id="bigbtn">🔘 큰 버튼 모드</button><button class="chip" id="thbtn">🌓 테마: 자동</button></div>
 <p class="sub">경기 종류, 상대 스타일, 경기장 조건을 고르면 대처법을 알려줍니다.<br><span id="cases"></span></p>
 
 <section><h2>경기 전 체크리스트 <small style="font-weight:400;color:var(--mute)">(부가 기능)</small></h2>
@@ -71,14 +74,20 @@ details{border-top:1px solid var(--line);padding:8px 0}summary{cursor:pointer;fo
 <section><h2>용어 사전 <small style="font-weight:400;color:var(--mute)">(부가 기능)</small></h2>
 <input id="tq" type="search" placeholder="용어 검색 (예: 헤어핀, 드라이브)" aria-label="용어 검색"><div id="tlist"></div></section>
 
+<section><h2>랜덤 복습 퀴즈 <small style="font-weight:400;color:var(--mute)">(부가 기능 · 저장된 공략 팁으로 스스로 복습)</small></h2>
+<button class="chip" id="quizbtn">퀴즈 뽑기</button>
+<div id="quizout" style="margin-top:10px"></div></section>
+
 <section><h2>음성/텍스트 메모 <small style="font-weight:400;color:var(--mute)">(부가 기능 · 세트 사이 빠른 기록)</small></h2>
 <div class="chips"><button class="chip" id="vbtn">🎤 음성으로 메모</button></div>
 <p id="voicemsg" class="note" style="margin:6px 0"></p>
 <div class="chips"><input id="mtxt" placeholder="직접 입력도 가능합니다" style="flex:1;font:inherit;padding:7px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)"><button class="chip" id="madd">추가</button></div>
+<input id="mq" type="search" placeholder="메모 검색" aria-label="메모 검색" style="width:100%;margin-top:8px">
 <div id="memolist" style="margin-top:8px"></div></section>
 
 <section><h2>코트 조건 사진 기록 <small style="font-weight:400;color:var(--mute)">(부가 기능 · 같은 장소 재방문 시 참고)</small></h2>
 <input id="pfile" type="file" accept="image/*" capture="environment">
+<button class="chip" id="pclear" style="margin-left:6px">전체 삭제</button>
 <div id="photolist" style="margin-top:8px"></div>
 <p class="note">사진은 작게 축소되어 이 브라우저에만 저장됩니다. 용량이 크면 저장이 안 될 수 있습니다.</p></section>
 
@@ -117,6 +126,7 @@ details{border-top:1px solid var(--line);padding:8px 0}summary{cursor:pointer;fo
 
 <section><h2>상대 프로필 저장 <small style="font-weight:400;color:var(--mute)">(부가 기능 · 다음에 같은 상대 만날 때 재사용)</small></h2>
 <div class="chips"><input id="pn" placeholder="상대 이름 (예: 김철수)" style="font:inherit;padding:7px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)"><button class="chip" id="psave">현재 선택 저장</button></div>
+<input id="pq" type="search" placeholder="저장된 프로필 이름 검색" aria-label="프로필 검색" style="width:100%;margin-top:8px">
 <div class="chips" id="plist" style="margin-top:10px"></div>
 <h2 style="margin-top:14px">상대 vs 상대 비교</h2>
 <div class="chips"><select id="cp1" style="font:inherit;padding:7px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)"></select><select id="cp2" style="font:inherit;padding:7px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)"></select><button class="chip" id="cpbtn">비교하기</button></div>
@@ -283,7 +293,8 @@ try{MEMO=JSON.parse(localStorage.getItem('memo')||'[]')}catch(e){}
 try{PHOTO=JSON.parse(localStorage.getItem('photo')||'[]')}catch(e){}
 const saveMemo=()=>{try{localStorage.setItem('memo',JSON.stringify(MEMO))}catch(e){}};
 const savePhoto=()=>{try{localStorage.setItem('photo',JSON.stringify(PHOTO))}catch(e){}};
-function buildMemo(){$('#memolist').innerHTML=MEMO.length?MEMO.slice().reverse().map((m,ri)=>{const i=MEMO.length-1-ri;return'<div class="who"><small style="color:var(--mute)">'+m.t+'</small><br>'+m.x+' <button class="chip" data-mi="'+i+'" style="padding:2px 8px;font-size:.75rem">삭제</button></div>'}).join(''):'<p class="note">아직 메모가 없습니다.</p>';
+function buildMemo(){const q=($('#mq')?$('#mq').value:'').trim();const list=MEMO.filter(m=>!q||m.x.includes(q));
+ $('#memolist').innerHTML=list.length?list.slice().reverse().map(m=>{const i=MEMO.indexOf(m);return'<div class="who"><small style="color:var(--mute)">'+m.t+'</small><br>'+m.x+' <button class="chip" data-mi="'+i+'" style="padding:2px 8px;font-size:.75rem">삭제</button></div>'}).join(''):'<p class="note">'+(q?'검색 결과가 없습니다.':'아직 메모가 없습니다.')+'</p>';
  $('#memolist').querySelectorAll('[data-mi]').forEach(b=>b.onclick=()=>{MEMO.splice(+b.dataset.mi,1);saveMemo();buildMemo()})}
 function addMemo(txt){if(!txt||!txt.trim())return;MEMO.push({t:new Date().toLocaleString('ko-KR'),x:txt.trim()});saveMemo();buildMemo()}
 function startVoice(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
@@ -303,8 +314,9 @@ function addFav(){const s=snap();if(!s.a.length&&!s.b.length){alert('먼저 위�
 function buildFavs(){const f=loadFavs(),el=$('#favlist');el.innerHTML=f.length?'':'<p class="note">즐겨찾기가 없습니다. 상대 스타일을 고른 뒤 아래 버튼으로 추가하세요.</p>';
  f.forEach((x,i)=>{const w=document.createElement('span');w.style.cssText='display:inline-flex;gap:4px;margin:3px';
   const lb=document.createElement('button');lb.className='chip';lb.textContent='⭐ '+x.label;lb.onclick=()=>applySnap(x.s);
-  const db=document.createElement('button');db.className='chip';db.textContent='×';db.style.cssText='padding:2px 9px;font-size:.75rem';db.onclick=()=>{const f2=loadFavs();f2.splice(i,1);saveFavs(f2);buildFavs()};
-  w.appendChild(lb);w.appendChild(db);el.appendChild(w)})}
+  const rn=document.createElement('button');rn.className='chip';rn.textContent='✎';rn.style.cssText='padding:2px 9px;font-size:.75rem';rn.onclick=()=>{const nn=prompt('새 이름',x.label);if(nn&&nn.trim()){const f2=loadFavs();f2[i].label=nn.trim();saveFavs(f2);buildFavs()}};
+  const db=document.createElement('button');db.className='chip';db.textContent='×';db.style.cssText='padding:2px 9px;font-size:.75rem';db.onclick=()=>{if(!confirm('이 즐겨찾기를 삭제할까요?'))return;const f2=loadFavs();f2.splice(i,1);saveFavs(f2);buildFavs()};
+  w.appendChild(lb);w.appendChild(rn);w.appendChild(db);el.appendChild(w)})}
 const BADGE_T=[[30,'🥇 골드'],[15,'🥈 실버'],[5,'🥉 브론즈']];
 function buildBadges(){const T2={};for(const c in REC)for(const k in REC[c]){const r=REC[c][k],a=T2[k]||(T2[k]=[0,0]);a[0]+=r[0];a[1]+=r[1]}
  const rows=Object.keys(T2).map(k=>{const succ=T2[k][0],b=BADGE_T.find(x=>succ>=x[0]),nm=(T.find(t=>t[0]===k)||[,k])[1];return{nm,succ,b}}).filter(r=>r.succ>0).sort((a,b)=>b.succ-a.succ);
@@ -354,10 +366,11 @@ function syncScore(){const my=+$('#ms').value||0,op=+$('#os').value||0,d=my-op;
  st.sit=(my>=20&&op>=20)?'close':d>=3?'lead':d<=-3?'behind':'';buildSit();if(typeof sbRender==='function'&&$('#sbScoreA'))sbRender();render()}
 function snap(){return{m:st.m,a:[...st.a],b:[...st.b],v:[...st.v],k:[...st.k],k2:[...st.k2],mine:[...st.mine]}}
 function loadProfiles(){try{return JSON.parse(localStorage.getItem('profiles')||'{}')}catch(e){return{}}}
-function buildPlist(){const P=loadProfiles(),el=$('#plist');el.innerHTML=Object.keys(P).length?'':'<span class="note">저장된 프로필이 없습니다.</span>';
- Object.keys(P).forEach(n=>{const w=document.createElement('span');w.style.cssText='display:inline-flex;gap:4px';
+function buildPlist(){const P=loadProfiles(),el=$('#plist'),q=($('#pq')?$('#pq').value:'').trim();const names=Object.keys(P).filter(n=>!q||n.includes(q));
+ el.innerHTML=names.length?'':'<span class="note">'+(q?'검색 결과가 없습니다.':'저장된 프로필이 없습니다.')+'</span>';
+ names.forEach(n=>{const w=document.createElement('span');w.style.cssText='display:inline-flex;gap:4px';
   const lb=document.createElement('button');lb.className='chip';lb.textContent='📂 '+n;lb.onclick=()=>applySnap(P[n]);
-  const db=document.createElement('button');db.className='chip';db.textContent='삭제';db.onclick=()=>{const P2=loadProfiles();delete P2[n];localStorage.setItem('profiles',JSON.stringify(P2));buildPlist();buildCompare()};
+  const db=document.createElement('button');db.className='chip';db.textContent='삭제';db.onclick=()=>{if(!confirm('"'+n+'" 프로필을 삭제할까요?'))return;const P2=loadProfiles();delete P2[n];localStorage.setItem('profiles',JSON.stringify(P2));buildPlist();buildCompare()};
   w.appendChild(lb);w.appendChild(db);el.appendChild(w)})}
 const DRILL={atk:'멀티셔틀 스매시 리시브 20개 연속 받기',def:'3구 안에 끝내는 공격 패턴 반복 연습(스매시→네트킬)',net:'헤어핀↔드라이브 전환 풋워크 훈련',all:'초반 3랠리 탐색 시뮬레이션(약점 코스 빠르게 찾기)',sta:'5구 이내 결정타 훈련, 짧은 랠리 스퍼트',lef:'반대 방향 크로스 스매시 각도 적응 훈련',bh:'백핸드 코너 연속 클리어 100개',spd:'깊은 하이클리어로 템포 늦추는 훈련',tr:'스플릿 스텝 타이밍 훈련(셔틀 임팩트까지 안 움직이기)',drp:'전위 전진 스텝과 푸시 마무리 훈련',pow:'네트 앞 짧은 공 연속 처리 훈련',slow:'코트 4모서리 왕복 풋워크 훈련'};
 const DRCAT={'샷 강점':'그 샷이 나올 코스를 막는 서브·리시브 위치 훈련','샷 약점':'그 샷 코스로 유도하는 3구 패턴 훈련','코트 구역 약점':'해당 구역 집중 타점 연습 50개','이동·체력':'인터벌 스텝 훈련(20초 전력·10초 휴식×10)','멘탈·운영':'점수 상황별(리드/듀스) 루틴 시뮬레이션','복식 전용':'로테이션·콜 사인 파트너 훈련','선수 특성':'초반 탐색 랠리로 특성 확인하는 연습 경기','장비·컨디션':'워밍업 루틴 표준화 연습','스탠스·자세':'상대 자세 관찰 후 코스 예측 훈련'};
@@ -376,9 +389,14 @@ function compareProfiles(){const n1=$('#cp1').value,n2=$('#cp2').value,P=loadPro
 function buildCompare(){const P=loadProfiles(),ks=Object.keys(P),o=k=>'<option value="'+k+'">'+k+'</option>';
  ['#cp1','#cp2'].forEach(id=>$(id).innerHTML='<option value="">선택</option>'+ks.map(o).join(''));
  $('#cpout').innerHTML=ks.length<2?'<p class="note">프로필을 2개 이상 저장하면 비교할 수 있습니다.</p>':''}
+function toast(msg){let t=document.getElementById('toastEl');if(!t){t=document.createElement('div');t.id='toastEl';t.className='toast';document.body.appendChild(t)}t.textContent=msg;t.classList.add('show');clearTimeout(window.__toastT);window.__toastT=setTimeout(()=>t.classList.remove('show'),2200)}
 function copySummary(){const{m,ka,kb,kk,vs,r}=window.__last||{};if(!r)return;const L=x=>x.length?x.join(', '):'없음';
  let t='[배드민턴 공략 요약]\n형식: '+(m==='s'?'단식':'복식')+'\n상대 스타일: '+L(ka.map(k=>STY[k].n))+(m==='d'?' / '+L(kb.map(k=>STY[k].n)):'')+'\n세부 키워드: '+L(kk)+'\n경기장: '+L(vs.map(k=>VEN[k].n))+'\n추천 전술 1위: '+r[0][0]+' ('+r[0][1].toFixed(1)+'%), 2위: '+r[1][0]+' ('+r[1][1].toFixed(1)+'%)\n';
- navigator.clipboard?.writeText(t).catch(()=>{});const io=$('#io');if(io){io.value=t;io.select()}}
+ navigator.clipboard?.writeText(t).catch(()=>{});const io=$('#io');if(io){io.value=t;io.select()}toast('📋 요약이 복사되었습니다')}
+const QUIZ_KEYS=Object.keys(TIP);
+function runQuiz(){if(!QUIZ_KEYS.length)return;const k=QUIZ_KEYS[Math.floor(Math.random()*QUIZ_KEYS.length)];
+ $('#quizout').innerHTML='<p style="font-weight:700">Q. "'+k+'" 상대에게는 어떻게 공략해야 할까요?</p><button class="chip" id="quizrev">정답 보기</button><p id="quizans" style="display:none;margin-top:6px">'+TIP[k]+'</p>';
+ $('#quizrev').onclick=()=>{$('#quizans').style.display='block'}}
 function buildSit(){const el=$('#sit');el.innerHTML='';for(const k in SIT){const b=document.createElement('button');b.className='chip';b.textContent=SIT[k].n;b.setAttribute('aria-pressed',st.sit===k);b.onclick=()=>{st.sit=st.sit===k?'':k;buildSit();render()};el.appendChild(b)}}
 const st={m:'s',a:new Set(),b:new Set(),v:new Set(),k:new Set(),k2:new Set(),kt:'a',g:{},mine:new Set(),sit:'',skill:0,server:''};
 const $=s=>document.querySelector(s);
@@ -413,7 +431,7 @@ function render(){const out=$('#out'),m=st.m;$('#cases').textContent=casesTxt();
  out.innerHTML=h}
 document.querySelectorAll('#mode button').forEach(b=>b.onclick=()=>{st.m=b.dataset.m;document.querySelectorAll('#mode button').forEach(x=>x.setAttribute('aria-pressed',x===b));buildOpps();buildGrp();$('#kt').style.display=st.m==='d'?'inline-flex':'none';buildKw();render()});
 document.querySelectorAll('#kt button').forEach(b=>b.onclick=()=>{st.kt=b.dataset.t;document.querySelectorAll('#kt button').forEach(x=>x.setAttribute('aria-pressed',x===b));buildKw()});
-chips($('#venue'),VEN,st.v,render);chips($('#mine'),Object.fromEntries(T.map(t=>[t[0],{n:t[1]}])),st.mine,render);buildSit();$('#rt').innerHTML=T.map(t=>'<option value="'+t[0]+'">'+t[1]+'</option>').join('');$('#ok').onclick=()=>record(1);$('#ng').onclick=()=>record(0);$('#rst').onclick=()=>{REC={};saveRec();buildStats();buildBadges();render()};$('#exp').onclick=()=>{const t=$('#io');t.value=JSON.stringify(REC);t.select()};$('#imp').onclick=()=>{try{const o=JSON.parse($('#io').value);if(o&&typeof o==='object'){REC=o;saveRec();buildStats();buildBadges();render()}}catch(e){$('#io').value='형식이 올바르지 않습니다. 내보내기로 만든 텍스트를 그대로 붙여넣으세요.'}};document.body.addEventListener('click',e=>{if(e.target&&e.target.id==='csum')copySummary()});
+chips($('#venue'),VEN,st.v,render);chips($('#mine'),Object.fromEntries(T.map(t=>[t[0],{n:t[1]}])),st.mine,render);buildSit();$('#rt').innerHTML=T.map(t=>'<option value="'+t[0]+'">'+t[1]+'</option>').join('');$('#ok').onclick=()=>record(1);$('#ng').onclick=()=>record(0);$('#rst').onclick=()=>{if(!confirm('모든 경기 기록을 초기화할까요? 되돌릴 수 없습니다.'))return;REC={};saveRec();buildStats();buildBadges();render()};$('#exp').onclick=()=>{const t=$('#io');t.value=JSON.stringify(REC);t.select()};$('#imp').onclick=()=>{try{const o=JSON.parse($('#io').value);if(o&&typeof o==='object'){REC=o;saveRec();buildStats();buildBadges();render()}}catch(e){$('#io').value='형식이 올바르지 않습니다. 내보내기로 만든 텍스트를 그대로 붙여넣으세요.'}};document.body.addEventListener('click',e=>{if(e.target&&e.target.id==='csum')copySummary()});
 buildFavs();$('#favadd').onclick=addFav;
 $('#sbAplus').onclick=()=>scoreAdd('a');$('#sbAminus').onclick=()=>scoreSub('a');$('#sbBplus').onclick=()=>scoreAdd('b');$('#sbBminus').onclick=()=>scoreSub('b');$('#sbSwap').onclick=sbSwapServe;$('#sbReset').onclick=sbResetScore;sbRender();
 buildRepList();$('#repgen').onclick=genReport;$('#repsave').onclick=saveReport;
@@ -435,6 +453,13 @@ $('#tmstart').onclick=tmStart;$('#tmstop').onclick=()=>{clearInterval(tmIv);tmIv
 $('#pdfbtn').onclick=()=>window.print();
 $('#fsp').onclick=()=>{fsz=Math.min(140,fsz+10);document.documentElement.style.fontSize=fsz+'%'};
 $('#fsm').onclick=()=>{fsz=Math.max(80,fsz-10);document.documentElement.style.fontSize=fsz+'%'};
+$('#bigbtn').onclick=()=>{document.body.classList.toggle('big');$('#bigbtn').setAttribute('aria-pressed',document.body.classList.contains('big'))};
+const THEMES=['','dark','light'],THLBL={'':'자동',dark:'다크',light:'라이트'};let thIdx=0;
+$('#thbtn').onclick=()=>{thIdx=(thIdx+1)%THEMES.length;const t=THEMES[thIdx];if(t)document.documentElement.setAttribute('data-theme',t);else document.documentElement.removeAttribute('data-theme');$('#thbtn').textContent='🌓 테마: '+THLBL[t]};
+$('#quizbtn').onclick=runQuiz;
+$('#pclear').onclick=()=>{if(!PHOTO.length)return;if(!confirm('저장된 사진을 모두 삭제할까요?'))return;PHOTO=[];savePhoto();buildPhoto()};
+$('#pq').oninput=buildPlist;$('#mq').oninput=buildMemo;
+document.addEventListener('keydown',e=>{if(e.code==='Space'&&!['INPUT','TEXTAREA','SELECT','BUTTON'].includes(document.activeElement.tagName)){e.preventDefault();ralCur++;ralRender()}});
 buildOpps();buildGrp();buildKw();$('#q').oninput=buildKw;render();
 </script>
 </body>
