@@ -40,7 +40,7 @@ details{border-top:1px solid var(--line);padding:8px 0}summary{cursor:pointer;fo
 body.big button.chip,body.big .seg button{padding:14px 22px;font-size:1.08rem}
 .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--court);color:var(--court-ink);padding:9px 18px;border-radius:999px;font-size:.9rem;font-weight:600;opacity:0;transition:opacity .25s;pointer-events:none;z-index:50}
 .toast.show{opacity:1}
-@media print{body *{visibility:hidden}#out,#out *,#report,#report *{visibility:visible}#out{position:absolute;left:0;top:0;width:100%}#report{position:absolute;left:0;top:0;width:100%}h1{visibility:visible;position:absolute;top:-40px}#csum,.no-print{display:none!important}}
+@media print{body *{visibility:hidden}#out,#out *{visibility:visible}#out{position:absolute;left:0;top:0;width:100%}h1{visibility:visible;position:absolute;top:-40px}#csum,.no-print{display:none!important}}
 </style>
 </head>
 <body>
@@ -48,6 +48,29 @@ body.big button.chip,body.big .seg button{padding:14px 22px;font-size:1.08rem}
 <h1>배드민턴 공략 도우미</h1>
 <div class="chips no-print" style="margin-bottom:8px"><button class="chip" id="fsm">가 작게</button><button class="chip" id="fsp">가 크게</button><button class="chip" id="pdfbtn">🖨 인쇄/PDF 저장</button><button class="chip" id="bigbtn">🔘 큰 버튼 모드</button><button class="chip" id="thbtn">🌓 테마: 자동</button></div>
 <p class="sub">경기 종류, 상대 스타일, 경기장 조건을 고르면 대처법을 알려줍니다.<br><span id="cases"></span></p>
+
+<section><h2>경기 종류</h2>
+<div class="seg" id="mode"><button data-m="s" aria-pressed="true">단식</button><button data-m="d" aria-pressed="false">복식</button></div></section>
+
+<section><h2>상대 플레이 스타일 <small style="font-weight:400;color:var(--mute)">(중복 선택 가능)</small></h2>
+<div id="opps"></div></section>
+
+<section><h2>세부 키워드 <small style="font-weight:400;color:var(--mute)">(스타일 12개 + 세부 88개 = 100가지)</small></h2>
+<div class="seg" id="kt" style="display:none;margin-bottom:10px"><button data-t="a" aria-pressed="true">상대 A에 적용</button><button data-t="b" aria-pressed="false">상대 B에 적용</button></div><br>
+<input id="q" type="search" placeholder="키워드 검색 (예: 백핸드, 체력, 스매시)" aria-label="키워드 검색"><div id="kw"></div></section>
+
+<section><h2>내 강점 전술 <small style="font-weight:400;color:var(--mute)">(자신 있는 것)</small></h2><div class="chips" id="mine"></div>
+<h2 style="margin-top:14px">경기 상황 <small style="font-weight:400;color:var(--mute)">(점수 입력 시 자동 반영)</small></h2>
+<div style="display:flex;gap:10px;align-items:center;margin-bottom:10px"><label>내 점수 <input id="ms" type="number" min="0" max="30" value="0" style="width:56px;font:inherit;padding:5px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)"></label>
+<label>상대 점수 <input id="os" type="number" min="0" max="30" value="0" style="width:56px;font:inherit;padding:5px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)"></label></div>
+<div class="chips" id="sit"></div></section>
+
+<section><h2>내 상태·경기 조건</h2><div id="grp"></div></section>
+
+<section><h2>경기장 조건 <small style="font-weight:400;color:var(--mute)">(해당되는 것 모두)</small></h2>
+<div class="chips" id="venue"></div></section>
+
+<div id="out"></div>
 
 <section><h2>경기 전 체크리스트 <small style="font-weight:400;color:var(--mute)">(부가 기능)</small></h2>
 <ul id="chk" style="list-style:none;padding:0;margin:0"></ul></section>
@@ -91,34 +114,9 @@ body.big button.chip,body.big .seg button{padding:14px 22px;font-size:1.08rem}
 <div id="photolist" style="margin-top:8px"></div>
 <p class="note">사진은 작게 축소되어 이 브라우저에만 저장됩니다. 용량이 크면 저장이 안 될 수 있습니다.</p></section>
 
-<section><h2>경기 후 회고 리포트 <small style="font-weight:400;color:var(--mute)">(부가 기능 · 기록을 모아 요약)</small></h2>
-<div class="chips no-print"><input id="rpOpp" placeholder="상대 이름(선택)" style="font:inherit;padding:7px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)"><button class="chip" id="rpGen">리포트 생성</button><button class="chip" id="rpPdf">🖨 리포트 인쇄/PDF</button></div>
-<div id="report" style="margin-top:10px"></div></section>
-
 <section><h2>파트너와 공유하기 <small style="font-weight:400;color:var(--mute)">(부가 기능 · 실시간 공유 서버는 없어 코드로 전달)</small></h2>
 <div class="chips"><button class="chip" id="shgen">현재 선택 공유 코드 만들기</button><button class="chip" id="shload">붙여넣은 코드 불러오기</button></div>
 <textarea id="shcode" rows="3" placeholder="코드가 여기 생성됩니다. 받은 코드는 여기 붙여넣고 '코드 불러오기'를 누르세요." style="width:100%;margin-top:8px;font:inherit;font-size:.78rem;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)"></textarea></section>
-
-<section><h2>경기 종류</h2>
-<div class="seg" id="mode"><button data-m="s" aria-pressed="true">단식</button><button data-m="d" aria-pressed="false">복식</button></div></section>
-
-<section><h2>상대 플레이 스타일 <small style="font-weight:400;color:var(--mute)">(중복 선택 가능)</small></h2>
-<div id="opps"></div></section>
-
-<section><h2>세부 키워드 <small style="font-weight:400;color:var(--mute)">(스타일 12개 + 세부 88개 = 100가지)</small></h2>
-<div class="seg" id="kt" style="display:none;margin-bottom:10px"><button data-t="a" aria-pressed="true">상대 A에 적용</button><button data-t="b" aria-pressed="false">상대 B에 적용</button></div><br>
-<input id="q" type="search" placeholder="키워드 검색 (예: 백핸드, 체력, 스매시)" aria-label="키워드 검색"><div id="kw"></div></section>
-
-<section><h2>내 강점 전술 <small style="font-weight:400;color:var(--mute)">(자신 있는 것)</small></h2><div class="chips" id="mine"></div>
-<h2 style="margin-top:14px">경기 상황 <small style="font-weight:400;color:var(--mute)">(점수 입력 시 자동 반영)</small></h2>
-<div style="display:flex;gap:10px;align-items:center;margin-bottom:10px"><label>내 점수 <input id="ms" type="number" min="0" max="30" value="0" style="width:56px;font:inherit;padding:5px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)"></label>
-<label>상대 점수 <input id="os" type="number" min="0" max="30" value="0" style="width:56px;font:inherit;padding:5px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)"></label></div>
-<div class="chips" id="sit"></div></section>
-
-<section><h2>내 상태·경기 조건</h2><div id="grp"></div></section>
-
-<section><h2>경기장 조건 <small style="font-weight:400;color:var(--mute)">(해당되는 것 모두)</small></h2>
-<div class="chips" id="venue"></div></section>
 
 <section><h2>즐겨찾기 조합 <small style="font-weight:400;color:var(--mute)">(부가 기능 · 자주 쓰는 상대 조합 한 번에 불러오기)</small></h2>
 <div id="favlist"></div>
@@ -155,7 +153,6 @@ body.big button.chip,body.big .seg button{padding:14px 22px;font-size:1.08rem}
 <div class="chips"><select id="rt" aria-label="사용한 전술" style="font:inherit;padding:7px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)"></select><button class="chip" id="ok">통했다</button><button class="chip" id="ng">안 통했다</button><button class="chip" id="rst">기록 초기화</button><button class="chip" id="exp">기록 내보내기</button><button class="chip" id="imp">기록 가져오기</button></div>
 <textarea id="io" rows="3" placeholder="내보내기를 누르면 기록이 여기에 나옵니다. 다른 기기에서는 이 칸에 붙여넣고 가져오기를 누르세요." style="width:100%;margin-top:10px;font:inherit;font-size:.8rem;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)"></textarea></section>
 
-<div id="out"></div>
 </main>
 <script>
 const STY={
